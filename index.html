@@ -12,21 +12,20 @@
 <style>
   :root{
     --bg:#f8fafc; --card:#ffffff; --ink:#0f172a; --muted:#475569; --line:#e2e8f0;
-    --brand:#06b6d4; --ok:#16a34a; --chip:#e2f6ff;
+    --brand:#06b6d4; --ok:#16a34a; --chip:#e2f6ff; --warn:#fb923c;
   }
   *{box-sizing:border-box}
   html, body{height:100%}
   body{
     margin:0; background:var(--bg); color:var(--ink);
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif;
-    overflow-y:scroll; /* 스티키 방해 요소 제거 */
+    overflow-y:scroll;
   }
 
   .wrap{max-width:1180px;margin:20px auto;padding:0 16px}
   h1{margin:0 0 6px;font-size:26px}
   .sub{color:var(--muted);margin-bottom:14px}
 
-  /* 2열: 좌(지도/예산) | 우(일정-스티키) */
   .layout{
     display:grid;
     grid-template-columns:minmax(0,1fr) 420px;
@@ -38,11 +37,9 @@
   }
 
   .mapcol{position:relative}
-  .planecol{position:relative} /* overflow/transform 금지 */
+  .planecol{position:relative}
   .stickyWrap{
-    position:sticky;
-    top:72px;          /* 헤더 여백 필요시 조정 */
-    z-index:2;
+    position:sticky; top:72px; z-index:2;
   }
   @media (max-width:1099px){
     .stickyWrap{position:static; top:auto}
@@ -66,8 +63,10 @@
   .dot{width:9px;height:9px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 3px rgba(34,211,238,.18)}
   .title{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px}
   .mini{color:var(--muted);font-size:12px}
+  .badges{display:flex;gap:6px;align-items:center}
   .badge{font-size:12px;background:#dcfce7;color:#065f46;border:1px solid #bbf7d0;padding:4px 8px;border-radius:999px}
   .badge.free{background:#f1f5f9;color:#334155;border-color:#e2e8f0}
+  .badge.hot{background:#fff7ed;color:#9a3412;border-color:#fed7aa}
   .row-sum{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
   .chip{border:1px solid var(--line);background:var(--chip);padding:6px 10px;border-radius:999px;font-size:13px}
   .sum{color:var(--ok);font-weight:800}
@@ -184,13 +183,12 @@
   var itinerary = [
     { day:1, title:"DAY 1 — 도착·마트·수영 (두짓타니)", steps:[
       { name:"두짓타니 체크인", info:"체크인 및 짐 정리", type:"hotel", budget:0, lat:13.5130, lng:144.8070 },
-      { name:"Japanese Fastfood", info:"저녁 대체: 무스비·우동 등 간단식", type:"burger", budget:40, lat:13.5115, lng:144.8065, opt:"A" },
       { name:"K Mart (404 N Marine Dr)", info:"생수·간식·아침용 포케·맥주 구매", type:"market", budget:40, lat:13.4873, lng:144.7820 },
-      { name:"(옵션 1) GPO 푸드코트/팬더익스프레스", info:"저녁 대체: 오렌지치킨·Beef&Broccoli / 하겐다즈", type:"mall", budget:45, lat:13.4867, lng:144.7822, opt:"B" }
       { name:"Tumon Beach", info:"산책 및 가벼운 물놀이", type:"beach", budget:0, lat:13.5105, lng:144.8049 },
-      { name:"(옵션 1) Emerald Valley", info:"자연 계곡 · 에메랄드빛 물색 포인트 (포토 스팟)", type:"spot", budget:0, lat:13.6525, lng:144.8615, opt:"A" },
       { name:"호텔 수영장", info:"유아풀 위주 이용", type:"pool", budget:0, lat:13.5131, lng:144.8072 },
       { name:"Tasi Grill (두짓타니 내)", info:"저녁: Tasi Burger, Fish & Chips, 맥주", type:"bbq", budget:60, lat:13.5131, lng:144.8072 },
+      { name:"(옵션 A) Japanese Fastfood", info:"저녁 대체: 무스비·우동 등 간단식", type:"burger", budget:40, lat:13.5115, lng:144.8065, opt:"A" },
+      { name:"(옵션 B) GPO 푸드코트/팬더익스프레스", info:"저녁 대체: 오렌지치킨·Beef&Broccoli / 하겐다즈", type:"mall", budget:45, lat:13.4867, lng:144.7822, opt:"B" }
     ]},
     { day:2, title:"DAY 2 — 바다·수영·BBQ (두짓타니)", steps:[
       { name:"Onigiri Seven", info:"아침: 포케볼", type:"poke", budget:20, lat:13.5113, lng:144.8063 },
@@ -199,34 +197,35 @@
       { name:"Meskla Dos", info:"점심: Badass Burger", type:"burger", budget:35, lat:13.5119, lng:144.8079 },
       { name:"GPO / K Mart", info:"오후 쇼핑·보충 구매", type:"market", budget:10, lat:13.4867, lng:144.7822 },
       { name:"Proa Restaurant", info:"저녁: BBQ 플래터 + 맥주", type:"bbq", budget:70, lat:13.5124, lng:144.8090 },
-      { name:"(옵션 1) Heavy Hitters BBQ", info:"★ 강추! 가족형 바비큐 플래터 + 맥주, 현지 인기 BBQ 스팟", type:"bbq", budget:65, lat:13.5140, lng:144.8100, opt:"A", highlight:true }
+      { name:"(옵션 A) Heavy Hitters BBQ", info:"★ 강추! 가족형 바비큐 플래터 + 맥주, 현지 인기 BBQ 스팟", type:"bbq", budget:65, lat:13.5140, lng:144.8100, opt:"A", highlight:true }
     ]},
     { day:3, title:"DAY 3 — 숙소 이동·여유 (롯데호텔)", steps:[
       { name:"롯데호텔 체크인", info:"체크인 및 수영/해변", type:"hotel", budget:0, lat:13.5161, lng:144.8060 },
       { name:"호텔 수영장", info:"아이들과 수영", type:"pool", budget:0, lat:13.5161, lng:144.8060 },
       { name:"Mosa’s", info:"점심: 햄버거 + 포케볼", type:"burger", budget:40, lat:13.5103, lng:144.8082 },
       { name:"솔레다드 요새", info:"전망 포인트(차 10분)", type:"spot", budget:0, lat:13.4653, lng:144.7450 },
-      { name:"(옵션 1) 비키니 아일랜드 투어", info:"Agat Marina 출발 단거리 해상 체험", type:"spot", budget:90, lat:13.3860, lng:144.6580, opt:"B" },
-      { name:"(옵션 2) 탈리팍 다리 (Talifak Bridge)", info:"남부 역사 포인트(포토스팟)", type:"spot", budget:0, lat:13.3690, lng:144.6710, opt:"B" }
       { name:"Ron’s Diner", info:"저녁: 차모로 BBQ + 맥주", type:"bbq", budget:65, lat:13.5092, lng:144.8100 },
-      { name:"(옵션 1) Longhorn Steakhouse", info:"스테이크 & 와인 / 아메리칸 스타일 스테이크하우스", type:"bbq", budget:80, lat:13.5095, lng:144.8103, opt:"B" },
+      { name:"(옵션 B) Longhorn Steakhouse", info:"스테이크 & 와인 / 아메리칸 스타일 스테이크하우스", type:"bbq", budget:80, lat:13.5095, lng:144.8103, opt:"B" },
+      { name:"(옵션 B) 비키니 아일랜드 투어", info:"Agat Marina 출발 단거리 해상 체험", type:"spot", budget:90, lat:13.3860, lng:144.6580, opt:"B" },
+      { name:"(옵션 B) 탈리팍 다리 (Talifak Bridge)", info:"남부 역사 포인트(포토스팟)", type:"spot", budget:0, lat:13.3690, lng:144.6710, opt:"B" }
     ]},
     { day:4, title:"DAY 4 — 수영·카페·야시장 (롯데호텔)", steps:[
       { name:"ABC Store (Tumon)", info:"아침: 포케볼 또는 과일컵", type:"poke", budget:20, lat:13.5108, lng:144.8053 },
-      { name:"(옵션 1) Mighty Purple’s", info:"아사이볼·주스·디저트 / 추천 메뉴: 아사이볼", type:"cafe", budget:14, lat:13.5150, lng:144.8060, opt:"A" },
       { name:"Tumon Beach", info:"해변·스노클·모래놀이", type:"beach", budget:0, lat:13.5105, lng:144.8049 },
-      { name:"(옵션 1) Ritidian Beach", info:"천연 해변 / 가족 사진 명소 (차량 접근 전용도로 주의)", type:"beach", budget:0, lat:13.6500, lng:144.8670, opt:"A" },
+      { name:"(옵션 A) Ritidian Beach", info:"천연 해변 / 가족 사진 명소 (차량 접근 전용도로 주의)", type:"beach", budget:0, lat:13.6500, lng:144.8670, opt:"A" },
+      { name:"(옵션 A) Emerald Valley", info:"자연 계곡 · 에메랄드빛 물색 포인트 (포토 스팟)", type:"spot", budget:0, lat:13.6525, lng:144.8615, opt:"A" },
       { name:"롯데호텔 수영장", info:"낮잠 후 수영", type:"pool", budget:0, lat:13.5161, lng:144.8060 },
       { name:"Meskla Chamoru Fusion Bistro", info:"점심: 로컬 플레이트/버거", type:"burger", budget:35, lat:13.5114, lng:144.8072 },
       { name:"Slow Walk Cafe", info:"커피·디저트(얼음X)", type:"cafe", budget:12, lat:13.5127, lng:144.8058 },
-      { name:"(옵션 1) Donkey(돈키호테) 몰", info:"야시장 혼잡 시 대체: 쇼핑+간단식(무료 셔틀)", type:"mall", budget:0, lat:13.5120, lng:144.8085, opt:"B" }
       { name:"Tumon Sunday Night Market", info:"저녁: BBQ·맥주·간식", type:"bbq", budget:60, lat:13.5122, lng:144.8044 },
+      { name:"(옵션 A) Mighty Purple’s", info:"아사이볼·주스·디저트 / 추천 메뉴: 아사이볼", type:"cafe", budget:14, lat:13.5150, lng:144.8060, opt:"A" },
+      { name:"(옵션 B) Donki(돈키호테) 몰", info:"야시장 혼잡 시 대체: 쇼핑+간단식(무료 셔틀)", type:"mall", budget:0, lat:13.5120, lng:144.8085, opt:"B" }
     ]},
     { day:5, title:"DAY 5 — 귀국 준비", steps:[
       { name:"롯데호텔 체크아웃", info:"짐 정리 및 출발 준비", type:"hotel", budget:0, lat:13.5161, lng:144.8060 },
       { name:"K Mart (Tamuning)", info:"기념품·간식 마지막 쇼핑", type:"market", budget:15, lat:13.4873, lng:144.7820 },
       { name:"Dream Rent a Car", info:"반납 및 공항 이동", type:"spot", budget:0, lat:13.5077, lng:144.8079 },
-      { name:"(옵션 1) GPO(Guam Premier Outlets)", info:"출국 전 쇼핑(푸드코트 포함)", type:"mall", budget:0, lat:13.4867, lng:144.7822, opt:"A" }
+      { name:"(옵션 A) GPO(Guam Premier Outlets)", info:"출국 전 쇼핑(푸드코트 포함)", type:"mall", budget:0, lat:13.4867, lng:144.7822, opt:"A" }
     ]}
   ];
 
@@ -251,7 +250,7 @@
       if(s.opt){ opts.push(s); } else { base.push(s); }
     }
     if(opts.length===0){ return dayObj.steps; }
-    /* 각 옵션이 가장 가까운 base index 찾기 */
+
     var groups = [], j;
     for(i=0;i<base.length;i++){ groups.push([]); }
     for(i=0;i<opts.length;i++){
@@ -263,7 +262,6 @@
       }
       groups[minIdx].push(o);
     }
-    /* base를 순서대로 출력하면서 그 바로 아래에 그룹 옵션들 삽입 */
     var merged = [];
     for(i=0;i<base.length;i++){
       merged.push(base[i]);
@@ -308,7 +306,7 @@
     for(i=0;i<obj.steps.length;i++){
       var s = obj.steps[i];
       var item = document.createElement('div');
-      item.className = 'item' + (s.opt==='A'?' optionA':(s.opt==='B'?' optionB':'')); /* 옵션 시각 구분 */
+      item.className = 'item' + (s.opt==='A'?' optionA':(s.opt==='B'?' optionB':''));
       item.setAttribute('data-lat', s.lat); item.setAttribute('data-lng', s.lng);
       item.setAttribute('data-name', s.name); item.setAttribute('data-info', s.info);
 
@@ -329,7 +327,11 @@
 
       left.appendChild(dot); left.appendChild(tx);
 
-      var right = document.createElement('div');
+      var right = document.createElement('div'); right.className='badges';
+      if(s.highlight){
+        var hot = document.createElement('span'); hot.className='badge hot'; hot.textContent='강추';
+        right.appendChild(hot);
+      }
       var tag;
       if(s.budget && s.budget>0){
         tag = document.createElement('span'); tag.className='badge'; tag.textContent = currency(s.budget);
@@ -447,9 +449,7 @@
 
   /* ===== 초기화 ===== */
   document.addEventListener('DOMContentLoaded', function(){
-    /* 1) 옵션을 가까운 본 항목 바로 아래로 재배치 */
     reorderAllDays();
-    /* 2) UI 생성/지도/기본 DAY 로드 */
     buildUI();
     initMap();
     activateDay(1);
