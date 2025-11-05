@@ -15,7 +15,13 @@
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif}
+
+  /* 데스크탑에서 우측 고정 패널 공간 확보(지도를 덮지 않음) */
   .wrap{max-width:1180px;margin:24px auto;padding:0 16px}
+  @media (min-width:1100px){
+    body.has-hoverpanel .wrap{padding-right:380px;} /* 우측 380px 비워 패널 자리 확보 */
+  }
+
   h1{font-size:28px;margin:0 0 6px}
   .sub{color:var(--muted);margin-bottom:18px}
 
@@ -46,18 +52,25 @@
   .chip{border:1px solid var(--line);background:var(--chip);padding:7px 11px;border-radius:999px;font-size:13px}
   .sum{color:var(--ok);font-weight:800}
 
-  .mapwrap{display:flex;gap:12px;align-items:stretch}
-  #map{flex:1 1 65%; min-height:460px; border-radius:14px; overflow:hidden}
-  .hoverdock{flex:0 0 320px; max-height:460px; border:1px solid var(--line); border-radius:14px; background:#fff; box-shadow:0 8px 20px rgba(2,132,199,.08); padding:12px; display:none; overflow:auto}
-  .hoverdock.show{display:block}
-  .hoverdock h3{margin:0 0 6px;font-size:14px}
-  .hoverdock p{margin:0;color:var(--muted);font-size:12px;line-height:1.55}
-  @media (max-width:980px){
-    .mapwrap{flex-direction:column}
-    #map{min-height:420px}
-    .hoverdock{flex:unset;max-height:none}
-  }
+  /* 지도 */
+  #map{width:100%;height:460px;border-radius:14px;overflow:hidden}
   .map-note{margin-top:8px;color:var(--muted);font-size:12px}
+
+  /* 고정 툴팁 패널(지도 밖, 화면 우측에 고정) */
+  .hoverfixed{
+    position:fixed; right:16px; top:92px; width:340px; max-height:72vh; overflow:auto;
+    background:#fff; border:1px solid var(--line); border-radius:14px;
+    box-shadow:0 12px 28px rgba(2,132,199,.15); display:none; z-index:1000; padding:12px;
+  }
+  .hoverfixed.show{display:block}
+  .hoverfixed h3{margin:0 0 6px;font-size:14px}
+  .hoverfixed p{margin:0;color:var(--muted);font-size:12px;line-height:1.55}
+
+  /* 모바일/태블릿은 하단 전폭 고정(지도 방해 최소화) */
+  @media (max-width:1099.98px){
+    .hoverfixed{left:12px; right:12px; bottom:12px; top:auto; width:auto; max-height:40vh}
+    body.has-hoverpanel .wrap{padding-right:16px;}
+  }
 
   .sections{margin:22px 0;display:grid;grid-template-columns:1fr 1fr;gap:16px}
   @media (max-width:980px){.sections{grid-template-columns:1fr}}
@@ -82,14 +95,8 @@
     <div class="card">
       <h2>지도</h2>
       <div class="body">
-        <div class="mapwrap">
-          <div id="map"></div>
-          <div class="hoverdock" id="hoverDock">
-            <h3 id="hoverTitle">장소 정보</h3>
-            <p id="hoverText">리스트/마커에 마우스를 올리면 이곳에 표시됩니다.</p>
-          </div>
-        </div>
-        <div class="map-note">지도 드래그/줌 방해 없이, 정보 패널은 데스크탑에선 오른쪽·모바일에선 아래 표시됩니다.</div>
+        <div id="map"></div>
+        <div class="map-note">마커·일정 항목에 마우스를 올리면 우측 패널에 정보가 표시됩니다. (지도 드래그/줌 자유)</div>
       </div>
     </div>
 
@@ -153,6 +160,12 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- 지도 밖, 화면 우측 고정 툴팁 패널 -->
+<div class="hoverfixed" id="hoverFixed">
+  <h3 id="hoverTitle">장소 정보</h3>
+  <p id="hoverText">리스트/마커에 마우스를 올리면 이곳에 표시됩니다.</p>
 </div>
 
 <script>
@@ -271,9 +284,8 @@
     var i;
     controls.innerHTML = '';
     panels.innerHTML = '';
-
     for(i=0;i<itinerary.length;i++){ controls.appendChild( makeDayButton(itinerary[i], i) ); }
-    for(i=0;i<itinerary.length;i++){ panels.appendChild( makePanel(itinerary[i], i) ); }
+    for(i=0;i<itinerary.length;i()){ panels.appendChild( makePanel(itinerary[i], i) ); }
   }
 
   function initMap(){
@@ -293,7 +305,7 @@
     else if(t==='pool') color='#60a5fa';
     else if(t==='beach') color='#34d399';
     else if(t==='spot') color='#ef4444';
-
+    else if(t==='cafe') color='#94a3b8';
     var html = '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="'+color+'" stroke="black" stroke-width="0.5"><path d="M12 2c3.9 0 7 3.1 7 7 0 5.2-7 13-7 13S5 14.2 5 9c0-3.9 3.1-7 7-7zm0 9.5c1.4 0 2.5-1.1 2.5-2.5S13.4 6.5 12 6.5 9.5 7.6 9.5 9 10.6 11.5 12 11.5z"/></svg>';
     return L.divIcon({ html: html, className:'mkr', iconSize:[26,26], iconAnchor:[13,26], popupAnchor:[0,-20] });
   }
@@ -344,16 +356,28 @@
     box.innerHTML = html;
   }
 
+  /* 우측 고정 패널 제어 */
   function showHover(title, text, lat, lng){
-    var dock = document.getElementById('hoverDock');
+    var box = document.getElementById('hoverFixed');
     document.getElementById('hoverTitle').textContent = title;
     document.getElementById('hoverText').textContent = typeof text==='string' ? text : '';
-    dock.classList.add('show');
+    box.classList.add('show');
     if(typeof lat==='number' && typeof lng==='number'){ focusMarker(lat, lng); }
   }
   function hideHover(){
-    var dock = document.getElementById('hoverDock');
-    dock.classList.remove('show');
+    var box = document.getElementById('hoverFixed');
+    box.classList.remove('show');
+  }
+
+  /* 반응형: 데스크탑이면 우측 여백 예약 */
+  function applyHoverPanelMode(){
+    if(window.innerWidth>=1100){
+      if(document.body.className.indexOf('has-hoverpanel')===-1){
+        document.body.className += ' has-hoverpanel';
+      }
+    }else{
+      document.body.className = document.body.className.replace(' has-hoverpanel','');
+    }
   }
 
   function activateDay(day){
@@ -372,12 +396,14 @@
   }
 
   function init(){
-    buildUI();          /* 생성: 1회 */
-    initMap();          /* 지도: 1회 */
-    activateDay(1);     /* 초기 활성화 */
+    buildUI();
+    initMap();
+    applyHoverPanelMode();
+    window.addEventListener('resize', applyHoverPanelMode);
+    activateDay(1);
   }
 
-  init(); /* DOM 끝에 스크립트가 있어 바로 실행해도 안전 */
+  init();
 </script>
 </body>
 </html>
