@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>괌 4박5일 가족여행 플래너 (바다·수영·최소이동)</title>
+
+<!-- Leaflet Map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+  :root{
+    --bg:#0f172a; --card:#111827; --muted:#94a3b8; --accent:#38bdf8; --good:#22c55e; --warn:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif;background:var(--bg);color:#e5e7eb}
+  .wrap{max-width:1100px;margin:24px auto;padding:0 16px}
+  h1{font-size:24px;margin:0 0 10px}
+  .sub{color:var(--muted);margin-bottom:16px}
+
+  /* Controls */
+  .days{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .daybtn{border:1px solid #334155;background:#0b1220;color:#e5e7eb;padding:8px 12px;border-radius:8px;cursor:pointer;transition:all .25s}
+  .daybtn:hover{border-color:var(--accent);color:#fff}
+  .daybtn.active{background:linear-gradient(135deg,#0ea5e9,#22d3ee);color:#00112a;border-color:transparent}
+
+  /* Panels with transitions */
+  .panels{position:relative;min-height:220px}
+  .panel{position:absolute;inset:0;opacity:0;transform:translateY(14px) scale(.985);pointer-events:none;transition:opacity .38s ease,transform .38s ease}
+  .panel.active{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+
+  /* Layout */
+  .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
+  @media (max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:linear-gradient(180deg,#0b1220,#0a1222 40%,#0b1220);border:1px solid #1f2937;border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.25)}
+  .card h2{font-size:16px;margin:0;padding:12px;border-bottom:1px solid #1f2937;color:#cbd5e1}
+  .card .body{padding:12px}
+
+  /* Timeline list */
+  .list{display:flex;flex-direction:column;gap:8px}
+  .item{display:flex;justify-content:space-between;gap:8px;padding:10px;border-radius:10px;border:1px solid #1f2937;background:#0c1324;align-items:center;transition:transform .2s,background .2s,border-color .2s}
+  .item:hover{background:#0e1630;border-color:#334155;transform:translateY(-1px)}
+  .item-left{display:flex;gap:10px;align-items:center}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(56,189,248,.15)}
+  .title{font-weight:600}
+  .mini{color:#94a3b8;font-size:12px}
+  .badge{font-size:12px;color:#111827;background:#a7f3d0;border:0;padding:4px 8px;border-radius:999px}
+  .badge.warn{background:#fde68a}
+
+  /* Hover info tooltip (right-top) */
+  .hoverbox{position:fixed;right:16px;top:16px;z-index:50;max-width:320px;background:#0b1220;border:1px solid #1f2937;border-radius:12px;padding:10px;display:none;box-shadow:0 10px 24px rgba(0,0,0,.35)}
+  .hoverbox h3{margin:0 0 4px;font-size:14px}
+  .hoverbox p{margin:0;color:#94a3b8;font-size:12px;line-height:1.5}
+
+  /* Budget row */
+  .budget{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+  .pill{border:1px solid #1f2937;padding:6px 10px;border-radius:999px;background:#0c1324}
+  .pill strong{color:#fff}
+  .sum{color:#bbf7d0}
+  .total{margin-top:12px;font-weight:700;color:#22c55e}
+
+  /* Map */
+  #map{width:100%;height:420px;border-radius:14px;overflow:hidden}
+  .map-note{margin-top:8px;color:#94a3b8;font-size:12px}
+  a.link{color:#7dd3fc;text-decoration:none}
+  a.link:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>괌 4박5일 가족여행 플래너</h1>
+  <div class="sub">두짓타니(16–18) → 롯데호텔(18–20) · 이동 최소 · 바다·수영 중심 · 아침 포케 / 점심 햄버거 / 저녁 BBQ+맥주</div>
+
+  <div class="days" id="dayControls"></div>
+
+  <div class="panels" id="panels"></div>
+
+  <div class="grid" style="margin-top:14px">
+    <div class="card">
+      <h2>지도</h2>
+      <div class="body">
+        <div id="map"></div>
+        <div class="map-note">마커에 마우스를 올리거나 일정 항목에 마우스를 올리면 정보가 표시됩니다.</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>예산</h2>
+      <div class="body">
+        <div id="budgetBox"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Hover info -->
+<div class="hoverbox" id="hoverBox">
+  <h3 id="hoverTitle">장소 정보</h3>
+  <p id="hoverText"></p>
+</div>
+
+<script>
+  /* ====== 데이터 (일정/장소/예산) ====== */
+  var itinerary = [
+    {
+      day:1, title:"DAY 1 — 도착·마트·수영 (두짓타니)",
+      steps:[
+        { name:"두짓타니 체크인", info:"체크인 및 짐 정리", type:"hotel", budget:0, lat:13.5130, lng:144.8070 },
+        { name:"K Mart (404 N Marine Dr)", info:"생수·간식·아침용 포케·맥주 구매", type:"market", budget:40, lat:13.4873, lng:144.7820 },
+        { name:"Tumon Beach", info:"산책 및 가벼운 물놀이", type:"beach", budget:0, lat:13.5105, lng:144.8049 },
+        { name:"호텔 수영장", info:"유아풀 위주 이용", type:"pool", budget:0, lat:13.5131, lng:144.8072 },
+        { name:"Tasi Grill (두짓타니 내)", info:"저녁: Tasi Burger, Fish & Chips, 맥주", type:"bbq", budget:60, lat:13.5131, lng:144.8072 }
+      ]
+    },
+    {
+      day:2, title:"DAY 2 — 바다·수영·BBQ (두짓타니)",
+      steps:[
+        { name:"Onigiri Seven", info:"아침: 포케볼", type:"poke", budget:20, lat:13.5113, lng:144.8063 },
+        { name:"Tumon Beach", info:"오전 물놀이", type:"beach", budget:0, lat:13.5105, lng:144.8049 },
+        { name:"호텔 수영장", info:"점심 전후 휴식/수영", type:"pool", budget:0, lat:13.5131, lng:144.8072 },
+        { name:"Meskla Dos", info:"점심: Badass Burger", type:"burger", budget:35, lat:13.5119, lng:144.8079 },
+        { name:"GPO / K Mart", info:"오후 쇼핑·보충 구매", type:"market", budget:10, lat:13.4867, lng:144.7822 },
+        { name:"Proa Restaurant", info:"저녁: BBQ 플래터 + 맥주", type:"bbq", budget:70, lat:13.5124, lng:144.8090 }
+      ]
+    },
+    {
+      day:3, title:"DAY 3 — 숙소 이동·여유 (롯데호텔)",
+      steps:[
+        { name:"롯데호텔 체크인", info:"체크인 및 수영/해변", type:"hotel", budget:0, lat:13.5161, lng:144.8060 },
+        { name:"호텔 수영장", info:"아이들과 수영", type:"pool", budget:0, lat:13.5161, lng:144.8060 },
+        { name:"Mosa’s", info:"점심: 햄버거 + 포케볼", type:"burger", budget:40, lat:13.5103, lng:144.8082 },
+        { name:"솔레다드 요새", info:"가까운 전망 포인트 (차 약 10분)", type:"spot", budget:0, lat:13.4653, lng:144.7450 },
+        { name:"Ron’s Diner", info:"저녁: 차모로 BBQ + 맥주", type:"bbq", budget:65, lat:13.5092, lng:144.8100 }
+      ]
+    },
+    {
+      day:4, title:"DAY 4 — 수영·카페·야시장 (롯데호텔)",
+      steps:[
+        { name:"ABC Store (Tumon)", info:"아침: 포케볼 또는 과일컵", type:"poke", budget:20, lat:13.5108, lng:144.8053 },
+        { name:"Tumon Beach", info:"해변·스노클·모래놀이", type:"beach", budget:0, lat:13.5105, lng:144.8049 },
+        { name:"롯데호텔 수영장", info:"낮잠 후 수영", type:"pool", budget:0, lat:13.5161, lng:144.8060 },
+        { name:"Meskla Chamoru Fusion Bistro", info:"점심: 로컬 플레이트 / 버거", type:"burger", budget:35, lat:13.5114, lng:144.8072 },
+        { name:"Slow Walk Cafe", info:"커피·디저트 (음료 얼음 없음)", type:"cafe", budget:12, lat:13.5127, lng:144.8058 },
+        { name:"Tumon Sunday Night Market", info:"저녁: BBQ·맥주·간식", type:"bbq", budget:60, lat:13.5122, lng:144.8044 }
+      ]
+    },
+    {
+      day:5, title:"DAY 5 — 귀국 준비",
+      steps:[
+        { name:"롯데호텔 체크아웃", info:"짐 정리 및 출발 준비", type:"hotel", budget:0, lat:13.5161, lng:144.8060 },
+        { name:"K Mart (Tamuning)", info:"기념품·간식 마지막 쇼핑", type:"market", budget:15, lat:13.4873, lng:144.7820 },
+        { name:"Dream Rent a Car", info:"반납 및 공항 이동", type:"spot", budget:0, lat:13.5077, lng:144.8079 }
+      ]
+    }
+  ];
+
+  /* ====== UI 생성 ====== */
+  var controls = document.getElementById('dayControls');
+  var panels = document.getElementById('panels');
+  var hoverBox = document.getElementById('hoverBox');
+  var hoverTitle = document.getElementById('hoverTitle');
+  var hoverText = document.getElementById('hoverText');
+
+  function currency(n){ return "$" + n.toFixed(0); }
+
+  function makeDayButton(obj, idx){
+    var b = document.createElement('button');
+    b.className = 'daybtn' + (idx===0?' active':'');
+    b.textContent = 'DAY ' + obj.day;
+    b.setAttribute('data-day', obj.day);
+    b.onclick = function(){ activateDay(obj.day); };
+    return b;
+  }
+
+  function makePanel(obj, idx){
+    var wrap = document.createElement('div');
+    wrap.className = 'panel card' + (idx===0?' active':'');
+    var h = document.createElement('h2');
+    h.textContent = obj.title;
+    var body = document.createElement('div');
+    body.className = 'body';
+    var list = document.createElement('div');
+    list.className = 'list';
+
+    for(var i=0;i<obj.steps.length;i++){
+      var s = obj.steps[i];
+      var item = document.createElement('div');
+      item.className = 'item';
+      item.setAttribute('data-lat', s.lat);
+      item.setAttribute('data-lng', s.lng);
+      item.setAttribute('data-name', s.name);
+      item.setAttribute('data-info', s.info);
+
+      item.onmouseenter = function(e){
+        var n = e.currentTarget.getAttribute('data-name');
+        var info = e.currentTarget.getAttribute('data-info');
+        showHover(n, info);
+        focusMarker(parseFloat(e.currentTarget.getAttribute('data-lat')), parseFloat(e.currentTarget.getAttribute('data-lng')));
+      };
+      item.onmouseleave = function(){ hideHover(); };
+
+      var left = document.createElement('div');
+      left.className = 'item-left';
+
+      var dot = document.createElement('span');
+      dot.className = 'dot';
+
+      var txtWrap = document.createElement('div');
+      var title = document.createElement('div');
+      title.className = 'title';
+      title.textContent = s.name;
+
+      var mini = document.createElement('div');
+      mini.className = 'mini';
+      mini.textContent = s.info;
+
+      txtWrap.appendChild(title);
+      txtWrap.appendChild(mini);
+
+      left.appendChild(dot);
+      left.appendChild(txtWrap);
+
+      var right = document.createElement('div');
+      if(s.budget && s.budget>0){
+        var badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = currency(s.budget);
+        right.appendChild(badge);
+      }else{
+        var badge2 = document.createElement('span');
+        badge2.className = 'badge warn';
+        badge2.textContent = 'Free';
+        right.appendChild(badge2);
+      }
+
+      item.appendChild(left);
+      item.appendChild(right);
+      list.appendChild(item);
+    }
+
+    var budgetRow = document.createElement('div');
+    budgetRow.className = 'budget';
+    var dsum = daySum(obj);
+    var pill = document.createElement('div'); pill.className='pill';
+    pill.innerHTML = '<strong>일자 합계</strong> · <span class="sum">'+currency(dsum)+'</span>';
+    budgetRow.appendChild(pill);
+
+    body.appendChild(list);
+    body.appendChild(budgetRow);
+    wrap.appendChild(h);
+    wrap.appendChild(body);
+    return wrap;
+  }
+
+  function daySum(obj){
+    var sum=0; for(var i=0;i<obj.steps.length;i++){ sum+= (obj.steps[i].budget||0); } return sum;
+  }
+  function totalSum(){
+    var t=0; for(var i=0;i<itinerary.length;i++){ t+=daySum(itinerary[i]); } return t;
+  }
+
+  for(var i=0;i<itinerary.length;i++){
+    controls.appendChild( makeDayButton(itinerary[i], i) );
+    panels.appendChild( makePanel(itinerary[i], i) );
+  }
+
+  /* ====== 지도 ====== */
+  var map = L.map('map',{ zoomControl:true, scrollWheelZoom:true }).setView([13.511,144.805], 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19, attribution:'© OpenStreetMap'
+  }).addTo(map);
+
+  var markerLayer = L.layerGroup().addTo(map);
+  var currentMarkers = [];
+
+  function iconByType(t){
+    var color = '#38bdf8';
+    if(t==='bbq') color='#f59e0b';
+    else if(t==='burger') color='#22c55e';
+    else if(t==='poke') color='#7dd3fc';
+    else if(t==='market') color='#a78bfa';
+    else if(t==='hotel') color='#f472b6';
+    else if(t==='pool') color='#60a5fa';
+    else if(t==='beach') color='#34d399';
+    else if(t==='spot') color='#fca5a5';
+    else if(t==='cafe') color='#c4b5fd';
+
+    var html = '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="'+color+'" stroke="black" stroke-width="0.5"><path d="M12 2c3.9 0 7 3.1 7 7 0 5.2-7 13-7 13S5 14.2 5 9c0-3.9 3.1-7 7-7zm0 9.5c1.4 0 2.5-1.1 2.5-2.5S13.4 6.5 12 6.5 9.5 7.6 9.5 9 10.6 11.5 12 11.5z"/></svg>';
+    return L.divIcon({ html: html, className:'mkr', iconSize:[26,26], iconAnchor:[13,26], popupAnchor:[0,-20] });
+  }
+
+  function loadMarkers(day){
+    markerLayer.clearLayers();
+    currentMarkers = [];
+    var obj = getDay(day);
+    var bounds = [];
+    for(var i=0;i<obj.steps.length;i++){
+      var s = obj.steps[i];
+      var m = L.marker([s.lat, s.lng], { icon: iconByType(s.type), title: s.name }).addTo(markerLayer);
+      m.bindPopup('<strong>'+s.name+'</strong><br>'+s.info);
+      m.on('mouseover', function(e){ e.target.openPopup(); showHover(e.target.options.title, e.target.getPopup().getContent().replace(/<[^>]*>?/gm,'')); });
+      m.on('mouseout', function(){ hideHover(); });
+      currentMarkers.push(m);
+      bounds.push([s.lat, s.lng]);
+    }
+    if(bounds.length){ map.fitBounds(bounds, { padding:[30,30] }); }
+  }
+
+  function focusMarker(lat,lng){
+    for(var i=0;i<currentMarkers.length;i++){
+      var mk = currentMarkers[i];
+      var p = mk.getLatLng();
+      if(Math.abs(p.lat-lat)<0.0009 && Math.abs(p.lng-lng)<0.0009){
+        mk.openPopup();
+        map.panTo([lat,lng], { animate:true, duration:.35 });
+        break;
+      }
+    }
+  }
+
+  function getDay(day){ for(var i=0;i<itinerary.length;i++){ if(itinerary[i].day===day) return itinerary[i]; } return itinerary[0]; }
+
+  /* ====== 패널 전환 / 예산 ====== */
+  function activateDay(day){
+    var btns = controls.querySelectorAll('.daybtn');
+    for(var i=0;i<btns.length;i++){
+      if(parseInt(btns[i].getAttribute('data-day'),10)===day){ btns[i].classList.add('active'); }
+      else{ btns[i].classList.remove('active'); }
+    }
+    var ps = panels.querySelectorAll('.panel');
+    for(var j=0;j<ps.length;j++){
+      var isActive = (j===(day-1));
+      if(isActive) ps[j].classList.add('active'); else ps[j].classList.remove('active');
+    }
+    loadMarkers(day);
+    renderBudget(day);
+  }
+
+  function renderBudget(day){
+    var box = document.getElementById('budgetBox');
+    var obj = getDay(day);
+    var html = '';
+    html += '<div class="budget">';
+    for(var i=0;i<obj.steps.length;i++){
+      var s = obj.steps[i]; var tag = '';
+      if(s.budget && s.budget>0){ tag = '<div class="pill"><strong>'+s.name+'</strong> · '+currency(s.budget)+'</div>'; }
+      if(tag) html += tag;
+    }
+    html += '</div>';
+    html += '<div class="total">DAY '+day+' 합계: '+currency(daySum(obj))+'</div>';
+    html += '<div class="total" style="color:#34d399">전체 합계: '+currency(totalSum())+'</div>';
+    box.innerHTML = html;
+  }
+
+  /* ====== Hover Info ====== */
+  function showHover(title, text){
+    hoverTitle.textContent = title;
+    hoverText.textContent = typeof text==='string' ? text : '';
+    hoverBox.style.display = 'block';
+  }
+  function hideHover(){ hoverBox.style.display = 'none'; }
+
+  /* ====== 초기화 ====== */
+  activateDay(1);
+</script>
+</body>
+</html>
