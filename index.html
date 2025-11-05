@@ -3,14 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>괌 4박5일 가족여행 플래너 — 스티키 고정</title>
+<title>괌 4박5일 가족여행 플래너 — 스티키 & 근접옵션 자동정렬</title>
 
 <!-- Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-  /* ===== 리셋/기본 ===== */
   :root{
     --bg:#f8fafc; --card:#ffffff; --ink:#0f172a; --muted:#475569; --line:#e2e8f0;
     --brand:#06b6d4; --ok:#16a34a; --chip:#e2f6ff;
@@ -20,49 +19,39 @@
   body{
     margin:0; background:var(--bg); color:var(--ink);
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif;
-    /* 스티키 방해 요소 금지: transform/filter/backdrop-filter 없음 */
-    overflow-y:scroll;
+    overflow-y:scroll; /* 스티키 방해 요소 제거 */
   }
 
-  /* ===== 컨테이너 ===== */
   .wrap{max-width:1180px;margin:20px auto;padding:0 16px}
   h1{margin:0 0 6px;font-size:26px}
   .sub{color:var(--muted);margin-bottom:14px}
 
-  /* ===== 2열 레이아웃 =====
-     좌(지금/예산) | 우(일정=스티키)
-  */
+  /* 2열: 좌(지도/예산) | 우(일정-스티키) */
   .layout{
     display:grid;
     grid-template-columns:minmax(0,1fr) 420px;
     gap:16px;
     align-items:start;
-    /* 스티키 방해 요소 없음 */
   }
   @media (max-width:1099px){
     .layout{grid-template-columns:1fr}
   }
 
-  /* 좌측 컬럼 (지도/예산) */
   .mapcol{position:relative}
-
-  /* 우측 컬럼 (일정) — 스티키 컨테이너 */
-  .planecol{position:relative; /* overflow/transform 금지 */}
-  .plane-stick{
+  .planecol{position:relative} /* overflow/transform 금지 */
+  .stickyWrap{
     position:sticky;
-    top:72px; /* 헤더/툴바 높이에 맞춰 조절 가능 */
-    z-index:2; /* 지도/툴팁보다 위로 */
+    top:72px;          /* 헤더 여백 필요시 조정 */
+    z-index:2;
   }
   @media (max-width:1099px){
-    .plane-stick{position:static; top:auto}
+    .stickyWrap{position:static; top:auto}
   }
 
-  /* ===== 카드 공통 ===== */
   .card{background:#fff;border:1px solid var(--line);border-radius:14px}
   .card h2{margin:0;padding:10px 12px;border-bottom:1px solid var(--line);font-size:15px;color:#0b2a33}
   .card .body{padding:12px}
 
-  /* ===== 일정 컨트롤/패널 ===== */
   .days{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
   .daybtn{border:1px solid var(--line);background:#fff;padding:9px 12px;border-radius:10px;font-weight:700;cursor:pointer}
   .daybtn.active{background:linear-gradient(135deg,#7dd3fc,#22d3ee);color:#052e3f;border-color:transparent}
@@ -83,11 +72,9 @@
   .chip{border:1px solid var(--line);background:var(--chip);padding:6px 10px;border-radius:999px;font-size:13px}
   .sum{color:var(--ok);font-weight:800}
 
-  /* ===== 지도 ===== */
   #map{width:100%;height:460px;border-radius:12px;overflow:hidden}
   .map-note{margin-top:6px;color:var(--muted);font-size:12px}
 
-  /* ===== 우측 고정 툴팁(지도 밀지 않음) ===== */
   .hoverfixed{
     position:fixed; right:16px; top:90px; width:340px; max-height:72vh;
     background:#fff;border:1px solid var(--line);border-radius:12px;
@@ -100,7 +87,6 @@
     .hoverfixed{left:12px; right:12px; bottom:12px; top:auto; width:auto; max-height:40vh}
   }
 
-  /* ===== 하단 정보 섹션 ===== */
   .sections{margin:18px 0;display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media (max-width:980px){.sections{grid-template-columns:1fr}}
   .sect h3{margin:0;padding:10px 12px;border-bottom:1px solid var(--line);font-size:15px;color:#0b2a33}
@@ -114,9 +100,8 @@
   <h1>괌 4박5일 가족여행 플래너</h1>
   <div class="sub">두짓타니(16–18) → 롯데호텔(18–20) · 이동 최소 · 바다·수영 중심 · 아침 포케 / 점심 햄버거 / 저녁 BBQ+맥주</div>
 
-  <!-- 2열: 좌=지도/예산 | 우=일정(스티키) -->
   <div class="layout">
-    <!-- 좌측: 지도 + 예산 -->
+    <!-- 좌: 지도/예산 -->
     <div class="col mapcol">
       <div class="card">
         <h2>지도</h2>
@@ -131,9 +116,9 @@
       </div>
     </div>
 
-    <!-- 우측: 일정(스티키) -->
+    <!-- 우: 일정(스티키 래퍼) -->
     <div class="col planecol">
-      <div class="plane-stick">
+      <div class="stickyWrap">
         <div class="days" id="dayControls"></div>
         <div id="panels"></div>
       </div>
@@ -188,14 +173,14 @@
   </div>
 </div>
 
-<!-- 화면 우측(모바일은 하단) 고정 정보 패널 -->
+<!-- 우측 고정 정보 패널 -->
 <div class="hoverfixed" id="hoverFixed">
   <h3 id="hoverTitle">장소 정보</h3>
   <p id="hoverText">리스트/마커에 마우스를 올리면 이곳에 표시됩니다.</p>
 </div>
 
 <script>
-  /* ===== 데이터 (옵션 A/B 포함) ===== */
+  /* ===== 원본 데이터 (옵션 포함, 위치는 대략) ===== */
   var itinerary = [
     { day:1, title:"DAY 1 — 도착·마트·수영 (두짓타니)", steps:[
       { name:"두짓타니 체크인", info:"체크인 및 짐 정리", type:"hotel", budget:0, lat:13.5130, lng:144.8070 },
@@ -203,8 +188,8 @@
       { name:"Tumon Beach", info:"산책 및 가벼운 물놀이", type:"beach", budget:0, lat:13.5105, lng:144.8049 },
       { name:"호텔 수영장", info:"유아풀 위주 이용", type:"pool", budget:0, lat:13.5131, lng:144.8072 },
       { name:"Tasi Grill (두짓타니 내)", info:"저녁: Tasi Burger, Fish & Chips, 맥주", type:"bbq", budget:60, lat:13.5131, lng:144.8072 },
-      { name:"(옵션 A) Japanese Fastfood", info:"저녁 가벼운 일식 패스트푸드(무스비·우동 등)", type:"burger", budget:40, lat:13.5115, lng:144.8065, opt:"A" },
-      { name:"(옵션 B) GPO 푸드코트/팬더익스프레스", info:"저녁: 오렌지치킨·Beef&Broccoli / 하겐다즈", type:"mall", budget:45, lat:13.4867, lng:144.7822, opt:"B" }
+      { name:"(옵션 A) Japanese Fastfood", info:"저녁 대체: 무스비·우동 등 간단식", type:"burger", budget:40, lat:13.5115, lng:144.8065, opt:"A" },
+      { name:"(옵션 B) GPO 푸드코트/팬더익스프레스", info:"저녁 대체: 오렌지치킨·Beef&Broccoli / 하겐다즈", type:"mall", budget:45, lat:13.4867, lng:144.7822, opt:"B" }
     ]},
     { day:2, title:"DAY 2 — 바다·수영·BBQ (두짓타니)", steps:[
       { name:"Onigiri Seven", info:"아침: 포케볼", type:"poke", budget:20, lat:13.5113, lng:144.8063 },
@@ -213,7 +198,7 @@
       { name:"Meskla Dos", info:"점심: Badass Burger", type:"burger", budget:35, lat:13.5119, lng:144.8079 },
       { name:"GPO / K Mart", info:"오후 쇼핑·보충 구매", type:"market", budget:10, lat:13.4867, lng:144.7822 },
       { name:"Proa Restaurant", info:"저녁: BBQ 플래터 + 맥주", type:"bbq", budget:70, lat:13.5124, lng:144.8090 },
-      { name:"(옵션 A) Heavy Hitters BBQ", info:"저녁: 가족형 BBQ 플래터 + 맥주", type:"bbq", budget:65, lat:13.5140, lng:144.8100, opt:"A" }
+      { name:"(옵션 A) Heavy Hitters BBQ", info:"저녁 대체: 가족형 BBQ 플래터 + 맥주", type:"bbq", budget:65, lat:13.5140, lng:144.8100, opt:"A" }
     ]},
     { day:3, title:"DAY 3 — 숙소 이동·여유 (롯데호텔)", steps:[
       { name:"롯데호텔 체크인", info:"체크인 및 수영/해변", type:"hotel", budget:0, lat:13.5161, lng:144.8060 },
@@ -231,7 +216,7 @@
       { name:"Meskla Chamoru Fusion Bistro", info:"점심: 로컬 플레이트/버거", type:"burger", budget:35, lat:13.5114, lng:144.8072 },
       { name:"Slow Walk Cafe", info:"커피·디저트(얼음X)", type:"cafe", budget:12, lat:13.5127, lng:144.8058 },
       { name:"Tumon Sunday Night Market", info:"저녁: BBQ·맥주·간식", type:"bbq", budget:60, lat:13.5122, lng:144.8044 },
-      { name:"(옵션 A) Mighty Purple’s", info:"아사이볼·주스·디저트", type:"cafe", budget:14, lat:13.5150, lng:144.8060, opt:"A" },
+      { name:"(옵션 A) Mighty Purple’s", info:"카페 대체: 아사이볼·주스·디저트", type:"cafe", budget:14, lat:13.5150, lng:144.8060, opt:"A" },
       { name:"(옵션 B) Donki(돈키) 몰", info:"야시장 혼잡 시 대체: 쇼핑+간단식(무료 셔틀)", type:"mall", budget:0, lat:13.5120, lng:144.8085, opt:"B" }
     ]},
     { day:5, title:"DAY 5 — 귀국 준비", steps:[
@@ -246,13 +231,60 @@
   var panels = document.getElementById('panels');
   var map, markerLayer, currentMarkers = [];
 
+  /* ===== 거리/Haversine ===== */
+  function rad(v){ return v * Math.PI / 180; }
+  function distKm(aLat, aLng, bLat, bLng){
+    var R = 6371, dLat = rad(bLat - aLat), dLng = rad(bLng - aLng);
+    var sa = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(rad(aLat))*Math.cos(rad(bLat))*Math.sin(dLng/2)*Math.sin(dLng/2);
+    var c = 2 * Math.atan2(Math.sqrt(sa), Math.sqrt(1-sa));
+    return R * c;
+  }
+
+  /* ===== 옵션을 가장 가까운 본 항목 바로 아래로 재배치 ===== */
+  function reorderOptionsForDay(dayObj){
+    var base = [], opts = [], i;
+    for(i=0;i<dayObj.steps.length;i++){
+      var s = dayObj.steps[i];
+      if(s.opt){ opts.push(s); } else { base.push(s); }
+    }
+    if(opts.length===0){ return dayObj.steps; }
+    /* 각 옵션이 가장 가까운 base index 찾기 */
+    var groups = [], j;
+    for(i=0;i<base.length;i++){ groups.push([]); }
+    for(i=0;i<opts.length;i++){
+      var o = opts[i], minD = 1e9, minIdx = 0;
+      for(j=0;j<base.length;j++){
+        var b = base[j];
+        var d = distKm(o.lat, o.lng, b.lat, b.lng);
+        if(d < minD){ minD = d; minIdx = j; }
+      }
+      groups[minIdx].push(o);
+    }
+    /* base를 순서대로 출력하면서 그 바로 아래에 그룹 옵션들 삽입 */
+    var merged = [];
+    for(i=0;i<base.length;i++){
+      merged.push(base[i]);
+      if(groups[i] && groups[i].length){
+        var k; for(k=0;k<groups[i].length;k++){ merged.push(groups[i][k]); }
+      }
+    }
+    return merged;
+  }
+
+  function reorderAllDays(){
+    var i;
+    for(i=0;i<itinerary.length;i++){
+      itinerary[i].steps = reorderOptionsForDay(itinerary[i]);
+    }
+  }
+
   /* ===== 유틸 ===== */
   function currency(n){ return "$" + n.toFixed(0); }
   function daySum(obj){ var s=0,i; for(i=0;i<obj.steps.length;i++){ s += (obj.steps[i].budget||0); } return s; }
   function totalSum(){ var t=0,i; for(i=0;i<itinerary.length;i++){ t += daySum(itinerary[i]); } return t; }
   function getDay(d){ var i; for(i=0;i<itinerary.length;i++){ if(itinerary[i].day===d) return itinerary[i]; } return itinerary[0]; }
 
-  /* ===== UI 생성 ===== */
+  /* ===== UI ===== */
   function makeDayButton(obj, idx){
     var b = document.createElement('button');
     b.className = 'daybtn' + (idx===0?' active':'');
@@ -273,7 +305,7 @@
     for(i=0;i<obj.steps.length;i++){
       var s = obj.steps[i];
       var item = document.createElement('div');
-      item.className = 'item' + (s.opt==='A'?' optionA':(s.opt==='B'?' optionB':'')); /* 옵션 표시 */
+      item.className = 'item' + (s.opt==='A'?' optionA':(s.opt==='B'?' optionB':'')); /* 옵션 시각 구분 */
       item.setAttribute('data-lat', s.lat); item.setAttribute('data-lng', s.lng);
       item.setAttribute('data-name', s.name); item.setAttribute('data-info', s.info);
 
@@ -397,7 +429,7 @@
     box.innerHTML = html;
   }
 
-  /* ===== 우측 고정 정보 패널 ===== */
+  /* ===== Hover 패널 ===== */
   function showHover(title, text, lat, lng){
     var box = document.getElementById('hoverFixed');
     document.getElementById('hoverTitle').textContent = title;
@@ -412,6 +444,9 @@
 
   /* ===== 초기화 ===== */
   document.addEventListener('DOMContentLoaded', function(){
+    /* 1) 옵션을 가까운 본 항목 바로 아래로 재배치 */
+    reorderAllDays();
+    /* 2) UI 생성/지도/기본 DAY 로드 */
     buildUI();
     initMap();
     activateDay(1);
