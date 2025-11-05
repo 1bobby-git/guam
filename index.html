@@ -3,44 +3,66 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>괌 4박5일 가족여행 플래너</title>
+<title>괌 4박5일 가족여행 플래너 — 스티키 고정</title>
 
 <!-- Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
+  /* ===== 리셋/기본 ===== */
   :root{
     --bg:#f8fafc; --card:#ffffff; --ink:#0f172a; --muted:#475569; --line:#e2e8f0;
-    --brand:#06b6d4; --brand2:#38bdf8; --ok:#16a34a; --chip:#e2f6ff;
+    --brand:#06b6d4; --ok:#16a34a; --chip:#e2f6ff;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif}
+  html, body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif;
+    /* 스티키 방해 요소 금지: transform/filter/backdrop-filter 없음 */
+    overflow-y:scroll;
+  }
 
+  /* ===== 컨테이너 ===== */
   .wrap{max-width:1180px;margin:20px auto;padding:0 16px}
   h1{margin:0 0 6px;font-size:26px}
   .sub{color:var(--muted);margin-bottom:14px}
 
-  /* ===== 2열 레이아웃: 좌(지도/예산) | 우(일정 패널) ===== */
-  .layout{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:16px;align-items:start}
-  .mapcol{position:relative}
-  .planecol{overflow: visible;  max-height: none;  padding-right: 4px;}
-  /* 스티키: DAY 버튼 + 패널 묶음 */
-  .plane-stick{z-index: 1;position:sticky; top:80px}
-
+  /* ===== 2열 레이아웃 =====
+     좌(지금/예산) | 우(일정=스티키)
+  */
+  .layout{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 420px;
+    gap:16px;
+    align-items:start;
+    /* 스티키 방해 요소 없음 */
+  }
   @media (max-width:1099px){
     .layout{grid-template-columns:1fr}
-    .planecol{max-height:none;overflow:visible}
-    .plane-stick{ position: static; top: auto; }
   }
 
-  /* 카드 공통 */
+  /* 좌측 컬럼 (지도/예산) */
+  .mapcol{position:relative}
+
+  /* 우측 컬럼 (일정) — 스티키 컨테이너 */
+  .planecol{position:relative; /* overflow/transform 금지 */}
+  .plane-stick{
+    position:sticky;
+    top:72px; /* 헤더/툴바 높이에 맞춰 조절 가능 */
+    z-index:2; /* 지도/툴팁보다 위로 */
+  }
+  @media (max-width:1099px){
+    .plane-stick{position:static; top:auto}
+  }
+
+  /* ===== 카드 공통 ===== */
   .card{background:#fff;border:1px solid var(--line);border-radius:14px}
   .card h2{margin:0;padding:10px 12px;border-bottom:1px solid var(--line);font-size:15px;color:#0b2a33}
   .card .body{padding:12px}
 
-  /* 일정 컨트롤/패널 */
+  /* ===== 일정 컨트롤/패널 ===== */
   .days{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
   .daybtn{border:1px solid var(--line);background:#fff;padding:9px 12px;border-radius:10px;font-weight:700;cursor:pointer}
   .daybtn.active{background:linear-gradient(135deg,#7dd3fc,#22d3ee);color:#052e3f;border-color:transparent}
@@ -61,25 +83,24 @@
   .chip{border:1px solid var(--line);background:var(--chip);padding:6px 10px;border-radius:999px;font-size:13px}
   .sum{color:var(--ok);font-weight:800}
 
-  /* 지도 */
+  /* ===== 지도 ===== */
   #map{width:100%;height:460px;border-radius:12px;overflow:hidden}
   .map-note{margin-top:6px;color:var(--muted);font-size:12px}
 
-  /* 우측 고정 툴팁(지도/레이아웃 미침범) */
+  /* ===== 우측 고정 툴팁(지도 밀지 않음) ===== */
   .hoverfixed{
     position:fixed; right:16px; top:90px; width:340px; max-height:72vh;
     background:#fff;border:1px solid var(--line);border-radius:12px;
-    box-shadow:0 12px 28px rgba(2,132,199,.15); padding:12px; display:none; z-index:1000; overflow:auto
+    box-shadow:0 12px 28px rgba(2,132,199,.15); padding:12px; display:none; z-index:3; overflow:auto
   }
   .hoverfixed.show{display:block}
   .hoverfixed h3{margin:0 0 6px;font-size:14px}
   .hoverfixed p{margin:0;color:var(--muted);font-size:12px;line-height:1.55}
-
   @media (max-width:1099px){
     .hoverfixed{left:12px; right:12px; bottom:12px; top:auto; width:auto; max-height:40vh}
   }
 
-  /* 하단 정보 섹션 */
+  /* ===== 하단 정보 섹션 ===== */
   .sections{margin:18px 0;display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media (max-width:980px){.sections{grid-template-columns:1fr}}
   .sect h3{margin:0;padding:10px 12px;border-bottom:1px solid var(--line);font-size:15px;color:#0b2a33}
@@ -93,7 +114,7 @@
   <h1>괌 4박5일 가족여행 플래너</h1>
   <div class="sub">두짓타니(16–18) → 롯데호텔(18–20) · 이동 최소 · 바다·수영 중심 · 아침 포케 / 점심 햄버거 / 저녁 BBQ+맥주</div>
 
-  <!-- 2열: 좌=지도/예산 | 우=일정 -->
+  <!-- 2열: 좌=지도/예산 | 우=일정(스티키) -->
   <div class="layout">
     <!-- 좌측: 지도 + 예산 -->
     <div class="col mapcol">
@@ -110,7 +131,7 @@
       </div>
     </div>
 
-    <!-- 우측: 일정 패널(스티키) -->
+    <!-- 우측: 일정(스티키) -->
     <div class="col planecol">
       <div class="plane-stick">
         <div class="days" id="dayControls"></div>
@@ -119,7 +140,7 @@
     </div>
   </div>
 
-  <!-- 안내 섹션 (그대로) -->
+  <!-- 안내 섹션 -->
   <div class="sections">
     <div class="card sect">
       <h3>운전 & 교통</h3>
@@ -159,8 +180,8 @@
           <li>BBQ: Proa, Heavy Hitters</li>
           <li>햄버거: Meskla Dos, Mosa’s</li>
           <li>브런치: Eggs ’n Things(평균 대기 40분)</li>
-          <li>카페: Mighty Purple’s, Slow Walk Cafe</li>
           <li>몰/간단식: GPO, Donki, Onigiri Seven</li>
+          <li>카페: Mighty Purple’s, Slow Walk Cafe</li>
         </ul>
       </div>
     </div>
@@ -174,85 +195,49 @@
 </div>
 
 <script>
-  /* ===== 데이터 (옵션 A/B 대체 항목 포함) ===== */
+  /* ===== 데이터 (옵션 A/B 포함) ===== */
   var itinerary = [
     { day:1, title:"DAY 1 — 도착·마트·수영 (두짓타니)", steps:[
       { name:"두짓타니 체크인", info:"체크인 및 짐 정리", type:"hotel", budget:0, lat:13.5130, lng:144.8070 },
-
       { name:"K Mart (404 N Marine Dr)", info:"생수·간식·아침용 포케·맥주 구매", type:"market", budget:40, lat:13.4873, lng:144.7820 },
-
       { name:"Tumon Beach", info:"산책 및 가벼운 물놀이", type:"beach", budget:0, lat:13.5105, lng:144.8049 },
-
       { name:"호텔 수영장", info:"유아풀 위주 이용", type:"pool", budget:0, lat:13.5131, lng:144.8072 },
-
       { name:"Tasi Grill (두짓타니 내)", info:"저녁: Tasi Burger, Fish & Chips, 맥주", type:"bbq", budget:60, lat:13.5131, lng:144.8072 },
-
-      /* 저녁 대체안 */
       { name:"(옵션 A) Japanese Fastfood", info:"저녁 가벼운 일식 패스트푸드(무스비·우동 등)", type:"burger", budget:40, lat:13.5115, lng:144.8065, opt:"A" },
-      { name:"(옵션 B) GPO 푸드코트/팬더익스프레스", info:"저녁: 오렌지치킨·Beef&Broccoli / 하겐다즈 디저트", type:"mall", budget:45, lat:13.4867, lng:144.7822, opt:"B" }
+      { name:"(옵션 B) GPO 푸드코트/팬더익스프레스", info:"저녁: 오렌지치킨·Beef&Broccoli / 하겐다즈", type:"mall", budget:45, lat:13.4867, lng:144.7822, opt:"B" }
     ]},
-
     { day:2, title:"DAY 2 — 바다·수영·BBQ (두짓타니)", steps:[
       { name:"Onigiri Seven", info:"아침: 포케볼", type:"poke", budget:20, lat:13.5113, lng:144.8063 },
-
       { name:"Tumon Beach", info:"오전 물놀이", type:"beach", budget:0, lat:13.5105, lng:144.8049 },
-
       { name:"호텔 수영장", info:"점심 전후 휴식/수영", type:"pool", budget:0, lat:13.5131, lng:144.8072 },
-
       { name:"Meskla Dos", info:"점심: Badass Burger", type:"burger", budget:35, lat:13.5119, lng:144.8079 },
-
       { name:"GPO / K Mart", info:"오후 쇼핑·보충 구매", type:"market", budget:10, lat:13.4867, lng:144.7822 },
-
       { name:"Proa Restaurant", info:"저녁: BBQ 플래터 + 맥주", type:"bbq", budget:70, lat:13.5124, lng:144.8090 },
-
-      /* 저녁 대체안 */
       { name:"(옵션 A) Heavy Hitters BBQ", info:"저녁: 가족형 BBQ 플래터 + 맥주", type:"bbq", budget:65, lat:13.5140, lng:144.8100, opt:"A" }
     ]},
-
     { day:3, title:"DAY 3 — 숙소 이동·여유 (롯데호텔)", steps:[
       { name:"롯데호텔 체크인", info:"체크인 및 수영/해변", type:"hotel", budget:0, lat:13.5161, lng:144.8060 },
-
       { name:"호텔 수영장", info:"아이들과 수영", type:"pool", budget:0, lat:13.5161, lng:144.8060 },
-
       { name:"Mosa’s", info:"점심: 햄버거 + 포케볼", type:"burger", budget:40, lat:13.5103, lng:144.8082 },
-
       { name:"솔레다드 요새", info:"전망 포인트(차 10분)", type:"spot", budget:0, lat:13.4653, lng:144.7450 },
-
       { name:"Ron’s Diner", info:"저녁: 차모로 BBQ + 맥주", type:"bbq", budget:65, lat:13.5092, lng:144.8100 },
-
-      /* 남부투어/체험 대체안 (오후) */
       { name:"(옵션 B) 비키니 아일랜드 투어", info:"Agat Marina 출발 단거리 해상 체험", type:"spot", budget:90, lat:13.3860, lng:144.6580, opt:"B" },
       { name:"(옵션 B) 탈리팍 다리 (Talifak Bridge)", info:"남부 역사 포인트(포토스팟)", type:"spot", budget:0, lat:13.3690, lng:144.6710, opt:"B" }
     ]},
-
     { day:4, title:"DAY 4 — 수영·카페·야시장 (롯데호텔)", steps:[
       { name:"ABC Store (Tumon)", info:"아침: 포케볼 또는 과일컵", type:"poke", budget:20, lat:13.5108, lng:144.8053 },
-
       { name:"Tumon Beach", info:"해변·스노클·모래놀이", type:"beach", budget:0, lat:13.5105, lng:144.8049 },
-
       { name:"롯데호텔 수영장", info:"낮잠 후 수영", type:"pool", budget:0, lat:13.5161, lng:144.8060 },
-
       { name:"Meskla Chamoru Fusion Bistro", info:"점심: 로컬 플레이트/버거", type:"burger", budget:35, lat:13.5114, lng:144.8072 },
-
       { name:"Slow Walk Cafe", info:"커피·디저트(얼음X)", type:"cafe", budget:12, lat:13.5127, lng:144.8058 },
-
       { name:"Tumon Sunday Night Market", info:"저녁: BBQ·맥주·간식", type:"bbq", budget:60, lat:13.5122, lng:144.8044 },
-
-      /* 카페 대체안 */
       { name:"(옵션 A) Mighty Purple’s", info:"아사이볼·주스·디저트", type:"cafe", budget:14, lat:13.5150, lng:144.8060, opt:"A" },
-
-      /* 저녁/쇼핑 대체안 */
       { name:"(옵션 B) Donki(돈키) 몰", info:"야시장 혼잡 시 대체: 쇼핑+간단식(무료 셔틀)", type:"mall", budget:0, lat:13.5120, lng:144.8085, opt:"B" }
     ]},
-
     { day:5, title:"DAY 5 — 귀국 준비", steps:[
       { name:"롯데호텔 체크아웃", info:"짐 정리 및 출발 준비", type:"hotel", budget:0, lat:13.5161, lng:144.8060 },
-
       { name:"K Mart (Tamuning)", info:"기념품·간식 마지막 쇼핑", type:"market", budget:15, lat:13.4873, lng:144.7820 },
-
       { name:"Dream Rent a Car", info:"반납 및 공항 이동", type:"spot", budget:0, lat:13.5077, lng:144.8079 },
-
-      /* 쇼핑 보강 대체안 */
       { name:"(옵션 A) GPO(Guam Premier Outlets)", info:"출국 전 쇼핑(푸드코트 포함)", type:"mall", budget:0, lat:13.4867, lng:144.7822, opt:"A" }
     ]}
   ];
@@ -287,8 +272,8 @@
     var i;
     for(i=0;i<obj.steps.length;i++){
       var s = obj.steps[i];
-      var item = document.createElement('div'); 
-      item.className = 'item' + (s.opt==='A'?' optionA':(s.opt==='B'?' optionB':'')); /* 옵션 시각 구분 */
+      var item = document.createElement('div');
+      item.className = 'item' + (s.opt==='A'?' optionA':(s.opt==='B'?' optionB':'')); /* 옵션 표시 */
       item.setAttribute('data-lat', s.lat); item.setAttribute('data-lng', s.lng);
       item.setAttribute('data-name', s.name); item.setAttribute('data-info', s.info);
 
