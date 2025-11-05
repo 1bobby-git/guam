@@ -11,18 +11,8 @@
 
 <style>
   :root{
-    /* Light theme inspired */
-    --bg:#f8fafc;           /* page */
-    --card:#ffffff;         /* surfaces */
-    --ink:#0f172a;          /* main text */
-    --muted:#475569;        /* secondary text */
-    --line:#e2e8f0;         /* borders */
-    --brand:#06b6d4;        /* cyan */
-    --brand-2:#38bdf8;      /* sky */
-    --ok:#16a34a;           /* green */
-    --warn:#f59e0b;         /* amber */
-    --free:#94a3b8;         /* gray tag */
-    --chip:#e2f6ff;         /* soft chip bg */
+    --bg:#f8fafc; --card:#ffffff; --ink:#0f172a; --muted:#475569; --line:#e2e8f0;
+    --brand:#06b6d4; --brand-2:#38bdf8; --ok:#16a34a; --warn:#f59e0b; --free:#94a3b8; --chip:#e2f6ff;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif}
@@ -30,24 +20,20 @@
   h1{font-size:28px;margin:0 0 6px}
   .sub{color:var(--muted);margin-bottom:18px}
 
-  /* Day controls */
   .days{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 18px}
   .daybtn{border:1px solid var(--line);background:#fff;color:var(--ink);padding:10px 14px;border-radius:10px;cursor:pointer;transition:all .25s;font-weight:600}
   .daybtn:hover{border-color:var(--brand-2);box-shadow:0 2px 10px rgba(56,189,248,.25)}
   .daybtn.active{background:linear-gradient(135deg,#7dd3fc,#22d3ee);color:#052e3f;border-color:transparent}
 
-  /* Panels (no absolute; prevents overlap with map) */
   .panel{display:none;opacity:0;transform:translateY(8px);transition:opacity .3s ease,transform .3s ease}
   .panel.active{display:block;opacity:1;transform:none}
 
-  /* Cards / layout */
   .cards{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}
   @media (max-width:980px){.cards{grid-template-columns:1fr}}
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.06)}
   .card h2{font-size:16px;margin:0;padding:12px 14px;border-bottom:1px solid var(--line);color:#0b2a33}
   .card .body{padding:12px 14px}
 
-  /* Timeline list */
   .list{display:flex;flex-direction:column;gap:10px}
   .item{display:flex;justify-content:space-between;gap:8px;padding:12px;border-radius:12px;border:1px solid var(--line);background:#fff;align-items:center;transition:transform .18s,box-shadow .18s,border-color .18s}
   .item:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(2,132,199,.12);border-color:#bae6fd}
@@ -61,17 +47,21 @@
   .chip{border:1px solid var(--line);background:var(--chip);padding:7px 11px;border-radius:999px;font-size:13px}
   .sum{color:var(--ok);font-weight:800}
 
-  /* Map */
-  #map{width:100%;height:460px;border-radius:14px;overflow:hidden}
+  /* 지도 + 오버 정보 나란히(데스크탑) / 스택(모바일) */
+  .mapwrap{display:flex;gap:12px;align-items:stretch}
+  #map{flex:1 1 65%; min-height:460px; border-radius:14px; overflow:hidden}
+  .hoverdock{flex:0 0 320px; max-height:460px; border:1px solid var(--line); border-radius:14px; background:#fff; box-shadow:0 8px 20px rgba(2,132,199,.08); padding:12px; display:none; overflow:auto}
+  .hoverdock.show{display:block}
+  .hoverdock h3{margin:0 0 6px;font-size:14px}
+  .hoverdock p{margin:0;color:var(--muted);font-size:12px;line-height:1.55}
+  @media (max-width:980px){
+    .mapwrap{flex-direction:column}
+    #map{min-height:420px}
+    .hoverdock{flex:unset;max-height:none}
+  }
+
   .map-note{margin-top:8px;color:var(--muted);font-size:12px}
 
-  /* Hover info (desktop) */
-  .hoverbox{position:fixed;right:16px;top:16px;z-index:50;max-width:320px;background:#ffffff;border:1px solid var(--line);border-radius:12px;padding:12px;display:none;box-shadow:0 12px 28px rgba(2,132,199,.15)}
-  .hoverbox h3{margin:0 0 6px;font-size:14px}
-  .hoverbox p{margin:0;color:var(--muted);font-size:12px;line-height:1.55}
-  @media (max-width:980px){.hoverbox{left:16px;right:16px;top:auto;bottom:16px}}
-
-  /* Sections (guides) */
   .sections{margin:22px 0;display:grid;grid-template-columns:1fr 1fr;gap:16px}
   @media (max-width:980px){.sections{grid-template-columns:1fr}}
   .sect h3{margin:0;padding:12px 14px;border-bottom:1px solid var(--line);font-size:15px;color:#0b2a33}
@@ -79,8 +69,6 @@
   .sect ul{margin:0;padding-left:18px;color:var(--muted);line-height:1.6}
   .sect li{margin:6px 0}
   .kicker{font-size:12px;color:#0b2a33;background:#e0f2fe;border:1px solid #bae6fd;padding:6px 10px;border-radius:999px;display:inline-block;margin-bottom:8px}
-
-  /* Links */
   a.link{color:#0284c7;text-decoration:none}
   a.link:hover{text-decoration:underline}
 </style>
@@ -90,37 +78,38 @@
   <h1>괌 4박5일 가족여행 플래너</h1>
   <div class="sub">두짓타니(16–18) → 롯데호텔(18–20) · 이동 최소 · 바다·수영 중심 · 아침 포케 / 점심 햄버거 / 저녁 BBQ+맥주</div>
 
-  <!-- Day Controls -->
   <div class="days" id="dayControls"></div>
-
-  <!-- Panels -->
   <div id="panels"></div>
 
-  <!-- Map & Budget -->
   <div class="cards" style="margin-top:16px">
     <div class="card">
       <h2>지도</h2>
       <div class="body">
-        <div id="map"></div>
-        <div class="map-note">마커 또는 일정 항목에 마우스를 올리면 정보가 표시됩니다.</div>
+        <div class="mapwrap">
+          <div id="map"></div>
+          <!-- 👇 오버 정보 패널: 데스크탑에서는 지도 오른쪽, 모바일에서는 지도 아래 -->
+          <div class="hoverdock" id="hoverDock">
+            <h3 id="hoverTitle">장소 정보</h3>
+            <p id="hoverText">리스트/마커 위에 마우스를 올리면 이곳에 표시됩니다.</p>
+          </div>
+        </div>
+        <div class="map-note">마커 또는 일정 항목에 마우스를 올리면 정보가 표시됩니다. (지도 드래그·줌 방해 없음)</div>
       </div>
     </div>
+
     <div class="card">
       <h2>예산</h2>
-      <div class="body">
-        <div id="budgetBox"></div>
-      </div>
+      <div class="body"><div id="budgetBox"></div></div>
     </div>
   </div>
 
-  <!-- Guide Sections -->
   <div class="sections">
     <div class="card sect">
       <h3>운전 & 교통</h3>
       <div class="body">
         <span class="kicker">주의</span>
         <ul>
-          <li>차 안에 귀중품/짐 두지 않기(도난 위험). 어떤 경우는 아예 문을 잠그지 말라는 경고도 있습니다.</li>
+          <li>차 안에 귀중품/짐 두지 않기(도난 위험). 일부는 아예 문을 잠그지 말라는 경고도 있음.</li>
           <li>파랑/빨강선 주차금지, 갓길 주차 금지, 스쿨버스 스탑 시 주행 금지.</li>
           <li>포트홀(pothole) 주의 — 도로상태 고르지 않을 수 있음.</li>
           <li>중앙 차선 구조로 반대차선 차량 진입 가능 구간 주의.</li>
@@ -136,9 +125,9 @@
       <div class="body">
         <ul>
           <li>선글라스 필수.</li>
-          <li>흰 원피스/흰 셔츠/밝은 반바지 추천(해변/리조트 분위기).</li>
+          <li>흰 원피스/흰 셔츠/밝은 반바지 추천(해변/리조트 무드).</li>
           <li>습기제거제, 일회용세제, 섬유유연제, 보조배터리, 약상자, 수분진정팩, 김, 설거지 용품, 삼각대, 이중문잠금장치, 압축파우치.</li>
-          <li>로컬 마켓에서도 구입 가능하나, 소모품은 미리 준비하면 편리.</li>
+          <li>로컬 마켓에서도 구매 가능하나, 소모품은 미리 준비하면 편리.</li>
         </ul>
       </div>
     </div>
@@ -149,7 +138,7 @@
         <ul>
           <li>인사: “하파데이(Håfa Adai)” = 안녕하세요.</li>
           <li>맛 표현: “멀릭” = 굿, 맛있어.</li>
-          <li>감사: “씨쥬스마아씨” = Thank you.</li>
+          <li>감사: “씨쥬스마아씨” = 고마워요.</li>
         </ul>
       </div>
     </div>
@@ -168,12 +157,6 @@
       </div>
     </div>
   </div>
-</div>
-
-<!-- Hover info -->
-<div class="hoverbox" id="hoverBox">
-  <h3 id="hoverTitle">장소 정보</h3>
-  <p id="hoverText"></p>
 </div>
 
 <script>
@@ -231,20 +214,14 @@
     }
   ];
 
-  /* ====== 공통 엘리먼트 ====== */
   var controls = document.getElementById('dayControls');
   var panels = document.getElementById('panels');
-  var hoverBox = document.getElementById('hoverBox');
-  var hoverTitle = document.getElementById('hoverTitle');
-  var hoverText = document.getElementById('hoverText');
 
-  /* ====== 유틸 ====== */
   function currency(n){ return "$" + n.toFixed(0); }
   function daySum(obj){ var s=0,i; for(i=0;i<obj.steps.length;i++){ s += (obj.steps[i].budget||0); } return s; }
   function totalSum(){ var t=0,i; for(i=0;i<itinerary.length;i++){ t += daySum(itinerary[i]); } return t; }
   function getDay(d){ var i; for(i=0;i<itinerary.length;i++){ if(itinerary[i].day===d) return itinerary[i]; } return itinerary[0]; }
 
-  /* ====== UI: Day Buttons & Panels ====== */
   function makeDayButton(obj, idx){
     var b = document.createElement('button');
     b.className = 'daybtn' + (idx===0?' active':'');
@@ -271,8 +248,7 @@
       item.onmouseenter = function(e){
         var n = e.currentTarget.getAttribute('data-name');
         var info = e.currentTarget.getAttribute('data-info');
-        showHover(n, info);
-        focusMarker(parseFloat(e.currentTarget.getAttribute('data-lat')), parseFloat(e.currentTarget.getAttribute('data-lng')));
+        showHover(n, info, parseFloat(e.currentTarget.getAttribute('data-lat')), parseFloat(e.currentTarget.getAttribute('data-lng')));
       };
       item.onmouseleave = function(){ hideHover(); };
 
@@ -309,26 +285,9 @@
     return wrap;
   }
 
-  function activateDay(day){
-    var i, btns = controls.querySelectorAll('.daybtn'), ps = panels.querySelectorAll('.panel');
-    for(i=0;i<btns.length;i++){
-      if(parseInt(btns[i].getAttribute('data-day'),10)===day){ btns[i].classList.add('active'); }
-      else{ btns[i].classList.remove('active'); }
-    }
-    for(i=0;i<ps.length;i++){
-      if((i+1)===day){ ps[i].classList.add('active'); }
-      else{ ps[i].classList.remove('active'); }
-    }
-    loadMarkers(day);
-    renderBudget(day);
-  }
-
-  /* ====== Mount UI ====== */
-  (function(){
-    var i;
-    for(i=0;i<itinerary.length;i++){ controls.appendChild( makeDayButton(itinerary[i], i) ); }
-    for(i=0;i<itinerary.length;i++){ panels.appendChild( makePanel(itinerary[i], i) ); }
-  })();
+  var i;
+  for(i=0;i<itinerary.length;i++){ controls.appendChild( makeDayButton(itinerary[i], i) ); }
+  for(i=0;i<itinerary.length;i++){ panels.appendChild( makePanel(itinerary[i], i) ); }
 
   /* ====== 지도 ====== */
   var map = L.map('map',{ zoomControl:true, scrollWheelZoom:true }).setView([13.511,144.805], 14);
@@ -361,7 +320,7 @@
       m.bindPopup('<strong>'+s.name+'</strong><br>'+s.info);
       m.on('mouseover', function(e){
         e.target.openPopup();
-        showHover(e.target.options.title, e.target.getPopup().getContent().replace(/<[^>]*>?/gm,''));
+        showHover(e.target.options.title, e.target.getPopup().getContent().replace(/<[^>]*>?/gm,''), e.target.getLatLng().lat, e.target.getLatLng().lng);
       });
       m.on('mouseout', function(){ hideHover(); });
       currentMarkers.push(m); bounds.push([s.lat, s.lng]);
@@ -381,7 +340,7 @@
     }
   }
 
-  /* ====== 예산 박스 ====== */
+  /* ====== 예산 ====== */
   function renderBudget(day){
     var box = document.getElementById('budgetBox');
     var obj = getDay(day);
@@ -399,17 +358,46 @@
     box.innerHTML = html;
   }
 
-  /* ====== Hover Info ====== */
-  function showHover(title, text){
-    var hb = hoverBox;
+  /* ====== Hover Info: 지도 오른쪽/아래 도크 ====== */
+  function showHover(title, text, lat, lng){
+    var dock = document.getElementById('hoverDock');
     document.getElementById('hoverTitle').textContent = title;
     document.getElementById('hoverText').textContent = typeof text==='string' ? text : '';
-    hb.style.display = 'block';
+    if(dock.className.indexOf('show')===-1){ dock.className += ' show'; }
+    if(typeof lat==='number' && typeof lng==='number'){ focusMarker(lat, lng); }
   }
-  function hideHover(){ document.getElementById('hoverBox').style.display = 'none'; }
+  function hideHover(){
+    var dock = document.getElementById('hoverDock');
+    dock.className = dock.className.replace(' show','');
+  }
 
-  /* ====== 초기화 ====== */
-  activateDay(1);
+  /* ====== 패널 활성화 ====== */
+  function activateDay(day){
+    var i, btns = document.querySelectorAll('.daybtn'), ps = document.querySelectorAll('.panel');
+    for(i=0;i<btns.length;i++){
+      if(parseInt(btns[i].getAttribute('data-day'),10)===day){ btns[i].classList.add('active'); }
+      else{ btns[i].classList.remove('active'); }
+    }
+    for(i=0;i<ps.length;i++){
+      if((i+1)===day){ ps[i].classList.add('active'); }
+      else{ ps[i].classList.remove('active'); }
+    }
+    loadMarkers(day);
+    renderBudget(day);
+    hideHover();
+  }
+
+  /* 초기 로드 */
+  (function(){
+    var i;
+    for(i=0;i<itinerary.length;i++){
+      controls.appendChild( makeDayButton(itinerary[i], i) );
+    }
+    for(i=0;i<itinerary.length;i++){
+      panels.appendChild( makePanel(itinerary[i], i) );
+    }
+    activateDay(1);
+  })();
 </script>
 </body>
 </html>
