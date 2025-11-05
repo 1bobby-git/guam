@@ -25,14 +25,14 @@
   /* ===== 2열 레이아웃: 좌(지도/예산) | 우(일정 패널) ===== */
   .layout{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:16px;align-items:start}
   .mapcol{position:relative}
-  .planecol{max-height:calc(100vh - 140px);overflow:auto;padding-right:4px}
+  .planecol{overflow: visible;  max-height: none;  padding-right: 4px;}
   /* 스티키: DAY 버튼 + 패널 묶음 */
-  .plane-stick{position:sticky; top:80px}
+  .plane-stick{z-index: 1;position:sticky; top:80px}
 
   @media (max-width:1099px){
     .layout{grid-template-columns:1fr}
     .planecol{max-height:none;overflow:visible}
-    .plane-stick{position:static; top:auto}
+    .plane-stick{ position: static; top: auto; }
   }
 
   /* 카드 공통 */
