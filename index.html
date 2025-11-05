@@ -26,9 +26,13 @@
   .layout{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:16px;align-items:start}
   .mapcol{position:relative}
   .planecol{max-height:calc(100vh - 140px);overflow:auto;padding-right:4px}
+  /* 스티키: DAY 버튼 + 패널 묶음 */
+  .plane-stick{position:sticky; top:80px}
+
   @media (max-width:1099px){
     .layout{grid-template-columns:1fr}
     .planecol{max-height:none;overflow:visible}
+    .plane-stick{position:static; top:auto}
   }
 
   /* 카드 공통 */
@@ -45,6 +49,8 @@
   .panel.active{display:block}
   .list{display:flex;flex-direction:column;gap:8px}
   .item{display:flex;justify-content:space-between;gap:8px;padding:10px;border-radius:12px;border:1px solid var(--line);background:#fff}
+  .item.optionA{border-style:dashed}
+  .item.optionB{border-style:dotted}
   .item-left{display:flex;gap:10px;align-items:center;min-width:0}
   .dot{width:9px;height:9px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 3px rgba(34,211,238,.18)}
   .title{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px}
@@ -104,14 +110,16 @@
       </div>
     </div>
 
-    <!-- 우측: 일정 패널 -->
+    <!-- 우측: 일정 패널(스티키) -->
     <div class="col planecol">
-      <div class="days" id="dayControls"></div>
-      <div id="panels"></div>
+      <div class="plane-stick">
+        <div class="days" id="dayControls"></div>
+        <div id="panels"></div>
+      </div>
     </div>
   </div>
 
-  <!-- 안내 섹션 -->
+  <!-- 안내 섹션 (그대로) -->
   <div class="sections">
     <div class="card sect">
       <h3>운전 & 교통</h3>
@@ -148,11 +156,11 @@
       <div class="body">
         <ul>
           <li>로컬: Ron’s Diner, Meskla Chamoru Fusion Bistro</li>
-          <li>BBQ: Proa</li>
-          <li>햄버거: Meskla Dos</li>
+          <li>BBQ: Proa, Heavy Hitters</li>
+          <li>햄버거: Meskla Dos, Mosa’s</li>
           <li>브런치: Eggs ’n Things(평균 대기 40분)</li>
           <li>카페: Mighty Purple’s, Slow Walk Cafe</li>
-          <li>간단식/쇼핑: Onigiri Seven, Micronesia Mall</li>
+          <li>몰/간단식: GPO, Donki, Onigiri Seven</li>
         </ul>
       </div>
     </div>
@@ -166,42 +174,86 @@
 </div>
 
 <script>
-  /* ===== 데이터 ===== */
+  /* ===== 데이터 (옵션 A/B 대체 항목 포함) ===== */
   var itinerary = [
     { day:1, title:"DAY 1 — 도착·마트·수영 (두짓타니)", steps:[
       { name:"두짓타니 체크인", info:"체크인 및 짐 정리", type:"hotel", budget:0, lat:13.5130, lng:144.8070 },
+
       { name:"K Mart (404 N Marine Dr)", info:"생수·간식·아침용 포케·맥주 구매", type:"market", budget:40, lat:13.4873, lng:144.7820 },
+
       { name:"Tumon Beach", info:"산책 및 가벼운 물놀이", type:"beach", budget:0, lat:13.5105, lng:144.8049 },
+
       { name:"호텔 수영장", info:"유아풀 위주 이용", type:"pool", budget:0, lat:13.5131, lng:144.8072 },
-      { name:"Tasi Grill (두짓타니 내)", info:"저녁: Tasi Burger, Fish & Chips, 맥주", type:"bbq", budget:60, lat:13.5131, lng:144.8072 }
+
+      { name:"Tasi Grill (두짓타니 내)", info:"저녁: Tasi Burger, Fish & Chips, 맥주", type:"bbq", budget:60, lat:13.5131, lng:144.8072 },
+
+      /* 저녁 대체안 */
+      { name:"(옵션 A) Japanese Fastfood", info:"저녁 가벼운 일식 패스트푸드(무스비·우동 등)", type:"burger", budget:40, lat:13.5115, lng:144.8065, opt:"A" },
+      { name:"(옵션 B) GPO 푸드코트/팬더익스프레스", info:"저녁: 오렌지치킨·Beef&Broccoli / 하겐다즈 디저트", type:"mall", budget:45, lat:13.4867, lng:144.7822, opt:"B" }
     ]},
+
     { day:2, title:"DAY 2 — 바다·수영·BBQ (두짓타니)", steps:[
       { name:"Onigiri Seven", info:"아침: 포케볼", type:"poke", budget:20, lat:13.5113, lng:144.8063 },
+
       { name:"Tumon Beach", info:"오전 물놀이", type:"beach", budget:0, lat:13.5105, lng:144.8049 },
+
       { name:"호텔 수영장", info:"점심 전후 휴식/수영", type:"pool", budget:0, lat:13.5131, lng:144.8072 },
+
       { name:"Meskla Dos", info:"점심: Badass Burger", type:"burger", budget:35, lat:13.5119, lng:144.8079 },
+
       { name:"GPO / K Mart", info:"오후 쇼핑·보충 구매", type:"market", budget:10, lat:13.4867, lng:144.7822 },
-      { name:"Proa Restaurant", info:"저녁: BBQ 플래터 + 맥주", type:"bbq", budget:70, lat:13.5124, lng:144.8090 }
+
+      { name:"Proa Restaurant", info:"저녁: BBQ 플래터 + 맥주", type:"bbq", budget:70, lat:13.5124, lng:144.8090 },
+
+      /* 저녁 대체안 */
+      { name:"(옵션 A) Heavy Hitters BBQ", info:"저녁: 가족형 BBQ 플래터 + 맥주", type:"bbq", budget:65, lat:13.5140, lng:144.8100, opt:"A" }
     ]},
+
     { day:3, title:"DAY 3 — 숙소 이동·여유 (롯데호텔)", steps:[
       { name:"롯데호텔 체크인", info:"체크인 및 수영/해변", type:"hotel", budget:0, lat:13.5161, lng:144.8060 },
+
       { name:"호텔 수영장", info:"아이들과 수영", type:"pool", budget:0, lat:13.5161, lng:144.8060 },
+
       { name:"Mosa’s", info:"점심: 햄버거 + 포케볼", type:"burger", budget:40, lat:13.5103, lng:144.8082 },
+
       { name:"솔레다드 요새", info:"전망 포인트(차 10분)", type:"spot", budget:0, lat:13.4653, lng:144.7450 },
-      { name:"Ron’s Diner", info:"저녁: 차모로 BBQ + 맥주", type:"bbq", budget:65, lat:13.5092, lng:144.8100 }
+
+      { name:"Ron’s Diner", info:"저녁: 차모로 BBQ + 맥주", type:"bbq", budget:65, lat:13.5092, lng:144.8100 },
+
+      /* 남부투어/체험 대체안 (오후) */
+      { name:"(옵션 B) 비키니 아일랜드 투어", info:"Agat Marina 출발 단거리 해상 체험", type:"spot", budget:90, lat:13.3860, lng:144.6580, opt:"B" },
+      { name:"(옵션 B) 탈리팍 다리 (Talifak Bridge)", info:"남부 역사 포인트(포토스팟)", type:"spot", budget:0, lat:13.3690, lng:144.6710, opt:"B" }
     ]},
+
     { day:4, title:"DAY 4 — 수영·카페·야시장 (롯데호텔)", steps:[
       { name:"ABC Store (Tumon)", info:"아침: 포케볼 또는 과일컵", type:"poke", budget:20, lat:13.5108, lng:144.8053 },
+
       { name:"Tumon Beach", info:"해변·스노클·모래놀이", type:"beach", budget:0, lat:13.5105, lng:144.8049 },
+
       { name:"롯데호텔 수영장", info:"낮잠 후 수영", type:"pool", budget:0, lat:13.5161, lng:144.8060 },
+
       { name:"Meskla Chamoru Fusion Bistro", info:"점심: 로컬 플레이트/버거", type:"burger", budget:35, lat:13.5114, lng:144.8072 },
+
       { name:"Slow Walk Cafe", info:"커피·디저트(얼음X)", type:"cafe", budget:12, lat:13.5127, lng:144.8058 },
-      { name:"Tumon Sunday Night Market", info:"저녁: BBQ·맥주·간식", type:"bbq", budget:60, lat:13.5122, lng:144.8044 }
+
+      { name:"Tumon Sunday Night Market", info:"저녁: BBQ·맥주·간식", type:"bbq", budget:60, lat:13.5122, lng:144.8044 },
+
+      /* 카페 대체안 */
+      { name:"(옵션 A) Mighty Purple’s", info:"아사이볼·주스·디저트", type:"cafe", budget:14, lat:13.5150, lng:144.8060, opt:"A" },
+
+      /* 저녁/쇼핑 대체안 */
+      { name:"(옵션 B) Donki(돈키) 몰", info:"야시장 혼잡 시 대체: 쇼핑+간단식(무료 셔틀)", type:"mall", budget:0, lat:13.5120, lng:144.8085, opt:"B" }
     ]},
+
     { day:5, title:"DAY 5 — 귀국 준비", steps:[
       { name:"롯데호텔 체크아웃", info:"짐 정리 및 출발 준비", type:"hotel", budget:0, lat:13.5161, lng:144.8060 },
+
       { name:"K Mart (Tamuning)", info:"기념품·간식 마지막 쇼핑", type:"market", budget:15, lat:13.4873, lng:144.7820 },
-      { name:"Dream Rent a Car", info:"반납 및 공항 이동", type:"spot", budget:0, lat:13.5077, lng:144.8079 }
+
+      { name:"Dream Rent a Car", info:"반납 및 공항 이동", type:"spot", budget:0, lat:13.5077, lng:144.8079 },
+
+      /* 쇼핑 보강 대체안 */
+      { name:"(옵션 A) GPO(Guam Premier Outlets)", info:"출국 전 쇼핑(푸드코트 포함)", type:"mall", budget:0, lat:13.4867, lng:144.7822, opt:"A" }
     ]}
   ];
 
@@ -235,7 +287,8 @@
     var i;
     for(i=0;i<obj.steps.length;i++){
       var s = obj.steps[i];
-      var item = document.createElement('div'); item.className = 'item';
+      var item = document.createElement('div'); 
+      item.className = 'item' + (s.opt==='A'?' optionA':(s.opt==='B'?' optionB':'')); /* 옵션 시각 구분 */
       item.setAttribute('data-lat', s.lat); item.setAttribute('data-lng', s.lng);
       item.setAttribute('data-name', s.name); item.setAttribute('data-info', s.info);
 
@@ -306,6 +359,7 @@
     else if(t==='beach') color='#34d399';
     else if(t==='spot') color='#ef4444';
     else if(t==='cafe') color='#94a3b8';
+    else if(t==='mall') color='#8b5cf6';
     var html = '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="'+color+'" stroke="black" stroke-width="0.5"><path d="M12 2c3.9 0 7 3.1 7 7 0 5.2-7 13-7 13S5 14.2 5 9c0-3.9 3.1-7 7-7zm0 9.5c1.4 0 2.5-1.1 2.5-2.5S13.4 6.5 12 6.5 9.5 7.6 9.5 9 10.6 11.5 12 11.5z"/></svg>';
     return L.divIcon({ html: html, className:'mkr', iconSize:[26,26], iconAnchor:[13,26], popupAnchor:[0,-20] });
   }
