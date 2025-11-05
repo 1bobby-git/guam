@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>괌 4박5일 가족여행 플래너</title>
 
+<!-- Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -14,34 +15,39 @@
     --brand:#06b6d4; --brand2:#38bdf8; --ok:#16a34a; --chip:#e2f6ff;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif}
-  .wrap{max-width:1180px;margin:20px auto;padding:0 16px}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,Apple SD Gothic Neo,Noto Sans KR,Malgun Gothic,sans-serif}
 
+  .wrap{max-width:1180px;margin:20px auto;padding:0 16px}
   h1{margin:0 0 6px;font-size:26px}
   .sub{color:var(--muted);margin-bottom:14px}
 
-  /* controls */
-  .days{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
-  .daybtn{border:1px solid var(--line);background:#fff;padding:9px 12px;border-radius:10px;font-weight:700;cursor:pointer}
-  .daybtn.active{background:linear-gradient(135deg,#7dd3fc,#22d3ee);color:#052e3f;border-color:transparent}
+  /* ===== 2열 레이아웃: 좌(지도/예산) | 우(일정 패널) ===== */
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:16px;align-items:start}
+  .mapcol{position:relative}
+  .planecol{max-height:calc(100vh - 140px);overflow:auto;padding-right:4px}
+  @media (max-width:1099px){
+    .layout{grid-template-columns:1fr}
+    .planecol{max-height:none;overflow:visible}
+  }
 
-  /* panels */
-  .panel{display:none}
-  .panel.active{display:block}
-
-  /* two cards under panels */
-  .cards{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
-  @media (max-width:980px){.cards{grid-template-columns:1fr}}
+  /* 카드 공통 */
   .card{background:#fff;border:1px solid var(--line);border-radius:14px}
   .card h2{margin:0;padding:10px 12px;border-bottom:1px solid var(--line);font-size:15px;color:#0b2a33}
   .card .body{padding:12px}
 
-  /* list */
+  /* 일정 컨트롤/패널 */
+  .days{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+  .daybtn{border:1px solid var(--line);background:#fff;padding:9px 12px;border-radius:10px;font-weight:700;cursor:pointer}
+  .daybtn.active{background:linear-gradient(135deg,#7dd3fc,#22d3ee);color:#052e3f;border-color:transparent}
+
+  .panel{display:none}
+  .panel.active{display:block}
   .list{display:flex;flex-direction:column;gap:8px}
   .item{display:flex;justify-content:space-between;gap:8px;padding:10px;border-radius:12px;border:1px solid var(--line);background:#fff}
   .item-left{display:flex;gap:10px;align-items:center;min-width:0}
   .dot{width:9px;height:9px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 3px rgba(34,211,238,.18)}
-  .title{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px}
+  .title{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px}
   .mini{color:var(--muted);font-size:12px}
   .badge{font-size:12px;background:#dcfce7;color:#065f46;border:1px solid #bbf7d0;padding:4px 8px;border-radius:999px}
   .badge.free{background:#f1f5f9;color:#334155;border-color:#e2e8f0}
@@ -49,11 +55,11 @@
   .chip{border:1px solid var(--line);background:var(--chip);padding:6px 10px;border-radius:999px;font-size:13px}
   .sum{color:var(--ok);font-weight:800}
 
-  /* map */
+  /* 지도 */
   #map{width:100%;height:460px;border-radius:12px;overflow:hidden}
   .map-note{margin-top:6px;color:var(--muted);font-size:12px}
 
-  /* fixed hover panel: never pushes map; never sits above map area */
+  /* 우측 고정 툴팁(지도/레이아웃 미침범) */
   .hoverfixed{
     position:fixed; right:16px; top:90px; width:340px; max-height:72vh;
     background:#fff;border:1px solid var(--line);border-radius:12px;
@@ -63,12 +69,11 @@
   .hoverfixed h3{margin:0 0 6px;font-size:14px}
   .hoverfixed p{margin:0;color:var(--muted);font-size:12px;line-height:1.55}
 
-  /* mobile: bottom full width */
   @media (max-width:1099px){
     .hoverfixed{left:12px; right:12px; bottom:12px; top:auto; width:auto; max-height:40vh}
   }
 
-  /* sections */
+  /* 하단 정보 섹션 */
   .sections{margin:18px 0;display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media (max-width:980px){.sections{grid-template-columns:1fr}}
   .sect h3{margin:0;padding:10px 12px;border-bottom:1px solid var(--line);font-size:15px;color:#0b2a33}
@@ -82,23 +87,31 @@
   <h1>괌 4박5일 가족여행 플래너</h1>
   <div class="sub">두짓타니(16–18) → 롯데호텔(18–20) · 이동 최소 · 바다·수영 중심 · 아침 포케 / 점심 햄버거 / 저녁 BBQ+맥주</div>
 
-  <div class="days" id="dayControls"></div>
-  <div id="panels"></div>
-
-  <div class="cards" style="margin-top:14px">
-    <div class="card">
-      <h2>지도</h2>
-      <div class="body">
-        <div id="map"></div>
-        <div class="map-note">리스트/마커에 마우스를 올리면 우측 패널에 정보가 표시됩니다.</div>
+  <!-- 2열: 좌=지도/예산 | 우=일정 -->
+  <div class="layout">
+    <!-- 좌측: 지도 + 예산 -->
+    <div class="col mapcol">
+      <div class="card">
+        <h2>지도</h2>
+        <div class="body">
+          <div id="map"></div>
+          <div class="map-note">리스트/마커에 마우스를 올리면 우측 패널에 정보가 표시됩니다.</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h2>예산</h2>
+        <div class="body"><div id="budgetBox"></div></div>
       </div>
     </div>
-    <div class="card">
-      <h2>예산</h2>
-      <div class="body"><div id="budgetBox"></div></div>
+
+    <!-- 우측: 일정 패널 -->
+    <div class="col planecol">
+      <div class="days" id="dayControls"></div>
+      <div id="panels"></div>
     </div>
   </div>
 
+  <!-- 안내 섹션 -->
   <div class="sections">
     <div class="card sect">
       <h3>운전 & 교통</h3>
@@ -106,7 +119,7 @@
         <ul>
           <li>차 안에 물건 두지 않기(도난 위험).</li>
           <li>파랑/빨강선 주차금지, 갓길 주차 금지, 스쿨버스 스탑 시 주행 금지.</li>
-          <li>포트홀 주의, 중앙차선 진입 차량 주의, 좌우회전 동시차선 주의.</li>
+          <li>포트홀·중앙차선 진입 차량·좌우회전 동시차선 주의.</li>
           <li>STOP 표지판 3초 정지, 반납 전 주유.</li>
         </ul>
       </div>
@@ -153,7 +166,7 @@
 </div>
 
 <script>
-  /* 데이터 */
+  /* ===== 데이터 ===== */
   var itinerary = [
     { day:1, title:"DAY 1 — 도착·마트·수영 (두짓타니)", steps:[
       { name:"두짓타니 체크인", info:"체크인 및 짐 정리", type:"hotel", budget:0, lat:13.5130, lng:144.8070 },
@@ -196,11 +209,13 @@
   var panels = document.getElementById('panels');
   var map, markerLayer, currentMarkers = [];
 
+  /* ===== 유틸 ===== */
   function currency(n){ return "$" + n.toFixed(0); }
   function daySum(obj){ var s=0,i; for(i=0;i<obj.steps.length;i++){ s += (obj.steps[i].budget||0); } return s; }
   function totalSum(){ var t=0,i; for(i=0;i<itinerary.length;i++){ t += daySum(itinerary[i]); } return t; }
   function getDay(d){ var i; for(i=0;i<itinerary.length;i++){ if(itinerary[i].day===d) return itinerary[i]; } return itinerary[0]; }
 
+  /* ===== UI 생성 ===== */
   function makeDayButton(obj, idx){
     var b = document.createElement('button');
     b.className = 'daybtn' + (idx===0?' active':'');
@@ -272,10 +287,12 @@
     for(i=0;i<itinerary.length;i++){ panels.appendChild( makePanel(itinerary[i], i) ); }
   }
 
+  /* ===== 지도 ===== */
   function initMap(){
     map = L.map('map',{ zoomControl:true, scrollWheelZoom:true }).setView([13.511,144.805], 14);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ maxZoom:19, attribution:'© OpenStreetMap' }).addTo(map);
     markerLayer = L.layerGroup().addTo(map);
+    currentMarkers = [];
   }
 
   function iconByType(t){
@@ -323,6 +340,7 @@
     }
   }
 
+  /* ===== 예산 ===== */
   function renderBudget(day){
     var box = document.getElementById('budgetBox');
     var obj = getDay(day);
@@ -340,7 +358,7 @@
     box.innerHTML = html;
   }
 
-  /* 고정 패널: 지도와 겹치지 않도록 화면 우측/모바일 하단에만 표시 */
+  /* ===== 우측 고정 정보 패널 ===== */
   function showHover(title, text, lat, lng){
     var box = document.getElementById('hoverFixed');
     document.getElementById('hoverTitle').textContent = title;
@@ -353,7 +371,7 @@
     box.className = box.className.replace(' show','');
   }
 
-  /* 초기화 (DOM 준비 후 실행) */
+  /* ===== 초기화 ===== */
   document.addEventListener('DOMContentLoaded', function(){
     buildUI();
     initMap();
