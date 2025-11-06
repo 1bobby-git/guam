@@ -200,10 +200,11 @@
       { name:"Proa Restaurant", info:"저녁: BBQ 플래터 + 맥주", type:"bbq", budget:70, lat:13.5124, lng:144.8090 },
       { name:"(옵션 A) Heavy Hitters BBQ", info:"★ 강추! 가족형 바비큐 플래터 + 맥주, 현지 인기 BBQ 스팟", type:"bbq", budget:65, lat:13.5140, lng:144.8100, opt:"A", highlight:true }
     ]},
-    { day:3, title:"DAY 3 — 숙소 이동·여유 (롯데호텔)", steps:[
-      { name:"롯데호텔 체크인", info:"체크인 및 수영/해변", type:"hotel", budget:0, lat:13.5161, lng:144.8060 },
-      { name:"호텔 수영장", info:"아이들과 수영", type:"pool", budget:0, lat:13.5161, lng:144.8060 },
+    { day:3, title:"DAY 3 — 돌핀투어·숙소 이동 (롯데호텔)", steps:[
+      { name:"Dolphin Watching Cruise (Agat Marina)", info:"오전 08:30~11:30 · 바다돌고래 관찰·스노클(선택) · 구명조끼 제공", type:"spot", budget:85, lat:13.3860, lng:144.6580 },
       { name:"Mosa’s", info:"점심: 햄버거 + 포케볼", type:"burger", budget:40, lat:13.5103, lng:144.8082 },
+      { name:"롯데호텔 체크인", info:"체크인 후 휴식", type:"hotel", budget:0, lat:13.5161, lng:144.8060 },
+      { name:"호텔 수영장", info:"아이들과 수영", type:"pool", budget:0, lat:13.5161, lng:144.8060 },
       { name:"솔레다드 요새", info:"전망 포인트(차 10분)", type:"spot", budget:0, lat:13.4653, lng:144.7450 },
       { name:"Ron’s Diner", info:"저녁: 차모로 BBQ + 맥주", type:"bbq", budget:65, lat:13.5092, lng:144.8100 },
       { name:"(옵션 B) Longhorn Steakhouse", info:"스테이크 & 와인 / 아메리칸 스타일 스테이크하우스", type:"bbq", budget:80, lat:13.5095, lng:144.8103, opt:"B" },
@@ -237,13 +238,13 @@
 
   /* ===== 거리/Haversine ===== */
   function rad(v){ return v * Math.PI / 180; }
+  function sin2(x){ var s=Math.sin(x); return s*s; }
   function distKm(aLat, aLng, bLat, bLng){
     var R = 6371, dLat = rad(bLat - aLat), dLng = rad(bLng - aLng);
-    var sa = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(rad(aLat))*Math.cos(rad(bLat))*sin2(dLng/2);
+    var sa = sin2(dLat/2) + Math.cos(rad(aLat))*Math.cos(rad(bLat))*sin2(dLng/2);
     var c = 2 * Math.atan2(Math.sqrt(sa), Math.sqrt(1-sa));
     return R * c;
   }
-  function sin2(x){ var s=Math.sin(x); return s*s; }
 
   /* ===== 옵션을 가장 가까운 본 항목 바로 아래로 재배치 ===== */
   function reorderOptionsForDay(dayObj){
