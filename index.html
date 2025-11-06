@@ -143,7 +143,7 @@
         <ul>
           <li>선글라스 필수. 흰 원피스/셔츠, 밝은 반바지 추천.</li>
           <li>습기제거제, 일회용세제, 섬유유연제, 보조배터리, 약상자, 수분진정팩, 김, 설거지 용품, 삼각대, 이중문잠금장치, 압축파우치.</li>
-          <li>마이쭈(비행기·이동 중 간식), <strong>미니 카봇</strong>(작은 장난감) 추가 준비.</li>
+          <li>마이쭈(이동 중 간식), <strong>미니 카봇</strong>(작은 장난감) 추가 준비.</li>
         </ul>
       </div>
     </div>
@@ -210,7 +210,7 @@
       { name:"(옵션 B) 비키니 아일랜드 투어", info:"Agat Marina 출발 단거리 해상 체험", type:"spot", budget:90, lat:13.3860, lng:144.6580, opt:"B" },
       { name:"(옵션 B) 탈리팍 다리 (Talifak Bridge)", info:"남부 역사 포인트(포토스팟)", type:"spot", budget:0, lat:13.3690, lng:144.6710, opt:"B" }
     ]},
-    { day:4, title:"DAY 4 — 수영·카페·야시장 (롯데호텔)", steps:[
+    { day:4, title:"DAY 4 — 수영·카페·선셋 디너 (롯데호텔)", steps:[
       { name:"ABC Store (Tumon)", info:"아침: 포케볼 또는 과일컵", type:"poke", budget:20, lat:13.5108, lng:144.8053 },
       { name:"Tumon Beach", info:"해변·스노클·모래놀이", type:"beach", budget:0, lat:13.5105, lng:144.8049 },
       { name:"(옵션 A) Ritidian Beach", info:"천연 해변 / 가족 사진 명소 (차량 접근 전용도로 주의)", type:"beach", budget:0, lat:13.6500, lng:144.8670, opt:"A" },
@@ -218,7 +218,8 @@
       { name:"롯데호텔 수영장", info:"낮잠 후 수영", type:"pool", budget:0, lat:13.5161, lng:144.8060 },
       { name:"Meskla Chamoru Fusion Bistro", info:"점심: 로컬 플레이트/버거", type:"burger", budget:35, lat:13.5114, lng:144.8072 },
       { name:"Slow Walk Cafe", info:"커피·디저트(얼음X)", type:"cafe", budget:12, lat:13.5127, lng:144.8058 },
-      { name:"Tumon Sunday Night Market", info:"저녁: BBQ·맥주·간식", type:"bbq", budget:60, lat:13.5122, lng:144.8044 },
+      { name:"The Beach Bar (Gun Beach)", info:"저녁: 선셋뷰 · BBQ & 칵테일/맥주 · 아이들 모래놀이 OK", type:"bbq", budget:75, lat:13.5240, lng:144.8065 },
+      { name:"(옵션 B) Tumon Sunday Night Market", info:"혼잡/대기 감수 시: 야시장 간식 투어", type:"bbq", budget:60, lat:13.5122, lng:144.8044, opt:"B" },
       { name:"(옵션 A) Mighty Purple’s", info:"아사이볼·주스·디저트 / 추천 메뉴: 아사이볼", type:"cafe", budget:14, lat:13.5150, lng:144.8060, opt:"A" },
       { name:"(옵션 B) Donki(돈키호테) 몰", info:"야시장 혼잡 시 대체: 쇼핑+간단식(무료 셔틀)", type:"mall", budget:0, lat:13.5120, lng:144.8085, opt:"B" }
     ]},
@@ -238,10 +239,11 @@
   function rad(v){ return v * Math.PI / 180; }
   function distKm(aLat, aLng, bLat, bLng){
     var R = 6371, dLat = rad(bLat - aLat), dLng = rad(bLng - aLng);
-    var sa = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(rad(aLat))*Math.cos(rad(bLat))*Math.sin(dLng/2)*Math.sin(dLng/2);
+    var sa = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(rad(aLat))*Math.cos(rad(bLat))*sin2(dLng/2);
     var c = 2 * Math.atan2(Math.sqrt(sa), Math.sqrt(1-sa));
     return R * c;
   }
+  function sin2(x){ var s=Math.sin(x); return s*s; }
 
   /* ===== 옵션을 가장 가까운 본 항목 바로 아래로 재배치 ===== */
   function reorderOptionsForDay(dayObj){
